@@ -7,6 +7,6 @@ module MathOptConflictSolver
 
 import MathOptInterface as MOI
 
-greet() = print("Hello World!")
+include("iis.jl")
 
 end # module MathOptConflictSolver
