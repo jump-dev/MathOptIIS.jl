@@ -80,10 +80,8 @@ function test_binary_lower()
     @objective(model, Max, x + y)
     data = MOCS.compute_conflicts(JuMP.backend(model))
     @test length(data) == 1
-    @test data[].constraints == [
-        JuMP.index(BinaryRef(x)),
-        JuMP.index(LowerBoundRef(x)),
-    ]
+    @test data[].constraints ==
+          [JuMP.index(BinaryRef(x)), JuMP.index(LowerBoundRef(x))]
     @test data[].irreducible
     @test data[].metadata == MOCS.IntegralityData(1.5, Inf, MOI.ZeroOne())
     return
@@ -97,10 +95,8 @@ function test_binary_upper()
     @objective(model, Max, x + y)
     data = MOCS.compute_conflicts(JuMP.backend(model))
     @test length(data) == 1
-    @test data[].constraints == [
-        JuMP.index(BinaryRef(x)),
-        JuMP.index(UpperBoundRef(x)),
-    ]
+    @test data[].constraints ==
+          [JuMP.index(BinaryRef(x)), JuMP.index(UpperBoundRef(x))]
     @test data[].irreducible
     @test data[].metadata == MOCS.IntegralityData(-Inf, -1.8, MOI.ZeroOne())
     return
@@ -118,15 +114,19 @@ function test_range()
     @objective(model, Max, x + y)
     data = MOCS.compute_conflicts(JuMP.backend(model))
     @test length(data) == 1
-    @test _isequal_unordered(data[].constraints, [
-        JuMP.index(c),
-        JuMP.index(UpperBoundRef(x)),
-        JuMP.index(LowerBoundRef(x)),
-        JuMP.index(UpperBoundRef(y)),
-        JuMP.index(LowerBoundRef(y)),
-    ])
+    @test _isequal_unordered(
+        data[].constraints,
+        [
+            JuMP.index(c),
+            JuMP.index(UpperBoundRef(x)),
+            JuMP.index(LowerBoundRef(x)),
+            JuMP.index(UpperBoundRef(y)),
+            JuMP.index(LowerBoundRef(y)),
+        ],
+    )
     @test data[].irreducible
-    @test data[].metadata == MOCS.RangeData(11.0, 22.0, MOI.LessThan{Float64}(1.0))
+    @test data[].metadata ==
+          MOCS.RangeData(11.0, 22.0, MOI.LessThan{Float64}(1.0))
     return
 end
 
@@ -139,15 +139,19 @@ function test_range_neg()
     #
     data = MOCS.compute_conflicts(JuMP.backend(model))
     @test length(data) == 1
-    @test _isequal_unordered(data[].constraints, [
-        JuMP.index(c),
-        JuMP.index(UpperBoundRef(x)),
-        JuMP.index(LowerBoundRef(x)),
-        JuMP.index(UpperBoundRef(y)),
-        JuMP.index(LowerBoundRef(y)),
-    ])
+    @test _isequal_unordered(
+        data[].constraints,
+        [
+            JuMP.index(c),
+            JuMP.index(UpperBoundRef(x)),
+            JuMP.index(LowerBoundRef(x)),
+            JuMP.index(UpperBoundRef(y)),
+            JuMP.index(LowerBoundRef(y)),
+        ],
+    )
     @test data[].irreducible
-    @test data[].metadata == MOCS.RangeData(11.0, 22.0, MOI.LessThan{Float64}(1.0))
+    @test data[].metadata ==
+          MOCS.RangeData(11.0, 22.0, MOI.LessThan{Float64}(1.0))
     return
 end
 
@@ -159,11 +163,10 @@ function test_range_equalto()
     @objective(model, Max, x + y)
     data = MOCS.compute_conflicts(JuMP.backend(model))
     @test length(data) == 1
-    @test _isequal_unordered(data[].constraints, [
-        JuMP.index(c),
-        JuMP.index(FixRef(x)),
-        JuMP.index(FixRef(y)),
-    ])
+    @test _isequal_unordered(
+        data[].constraints,
+        [JuMP.index(c), JuMP.index(FixRef(x)), JuMP.index(FixRef(y))],
+    )
     @test data[].irreducible
     @test data[].metadata == MOCS.RangeData(3.0, 3.0, MOI.EqualTo{Float64}(1.0))
     return
@@ -177,11 +180,10 @@ function test_range_equalto_2()
     @objective(model, Max, x + y)
     data = MOCS.compute_conflicts(JuMP.backend(model))
     @test length(data) == 1
-    @test _isequal_unordered(data[].constraints, [
-        JuMP.index(c),
-        JuMP.index(FixRef(x)),
-        JuMP.index(FixRef(y)),
-    ])
+    @test _isequal_unordered(
+        data[].constraints,
+        [JuMP.index(c), JuMP.index(FixRef(x)), JuMP.index(FixRef(y))],
+    )
     @test data[].irreducible
     @test data[].metadata == MOCS.RangeData(7.0, 7.0, MOI.EqualTo{Float64}(1.0))
     return
@@ -195,15 +197,19 @@ function test_range_greaterthan()
     @objective(model, Max, x + y)
     data = MOCS.compute_conflicts(JuMP.backend(model))
     @test length(data) == 1
-    @test _isequal_unordered(data[].constraints, [
-        JuMP.index(c),
-        JuMP.index(UpperBoundRef(x)),
-        JuMP.index(LowerBoundRef(x)),
-        JuMP.index(UpperBoundRef(y)),
-        JuMP.index(LowerBoundRef(y)),
-    ])
+    @test _isequal_unordered(
+        data[].constraints,
+        [
+            JuMP.index(c),
+            JuMP.index(UpperBoundRef(x)),
+            JuMP.index(LowerBoundRef(x)),
+            JuMP.index(UpperBoundRef(y)),
+            JuMP.index(LowerBoundRef(y)),
+        ],
+    )
     @test data[].irreducible
-    @test data[].metadata == MOCS.RangeData(11.0, 22.0, MOI.GreaterThan{Float64}(100.0))
+    @test data[].metadata ==
+          MOCS.RangeData(11.0, 22.0, MOI.GreaterThan{Float64}(100.0))
     return
 end
 
@@ -215,15 +221,19 @@ function test_range_equalto_3()
     @objective(model, Max, x + y)
     data = MOCS.compute_conflicts(JuMP.backend(model))
     @test length(data) == 1
-    @test _isequal_unordered(data[].constraints, [
-        JuMP.index(c),
-        JuMP.index(UpperBoundRef(x)),
-        JuMP.index(LowerBoundRef(x)),
-        JuMP.index(UpperBoundRef(y)),
-        JuMP.index(LowerBoundRef(y)),
-    ])
+    @test _isequal_unordered(
+        data[].constraints,
+        [
+            JuMP.index(c),
+            JuMP.index(UpperBoundRef(x)),
+            JuMP.index(LowerBoundRef(x)),
+            JuMP.index(UpperBoundRef(y)),
+            JuMP.index(LowerBoundRef(y)),
+        ],
+    )
     @test data[].irreducible
-    @test data[].metadata == MOCS.RangeData(11.0, 22.0, MOI.EqualTo{Float64}(100.0))
+    @test data[].metadata ==
+          MOCS.RangeData(11.0, 22.0, MOI.EqualTo{Float64}(100.0))
     return
 end
 
@@ -235,12 +245,12 @@ function test_interval()
     @constraint(model, c1, x + y <= 1)
     @objective(model, Max, x + y)
     optimize!(model)
-    data = MOCS.compute_conflicts(JuMP.backend(model), optimizer = HiGHS.Optimizer)
+    data =
+        MOCS.compute_conflicts(JuMP.backend(model), optimizer = HiGHS.Optimizer)
     @test length(data) == 0
     # TODO check status
     return
 end
-#=
 
 function test_iis_feasible()
     model = Model(HiGHS.Optimizer)
@@ -250,16 +260,10 @@ function test_iis_feasible()
     @constraint(model, c1, x + y <= 1)
     @objective(model, Max, x + y)
     optimize!(model)
-    data = ModelAnalyzer.analyze(
-        ModelAnalyzer.Infeasibility.Analyzer(),
-        model,
-        optimizer = HiGHS.Optimizer,
-    )
-    list = ModelAnalyzer.list_of_issue_types(data)
-    @test length(list) == 0
+    data = MOCS.compute_conflicts(JuMP.backend(model))
+    @test length(data) == 0
+    return
 end
-
-
 
 function test_iis()
     model = Model(HiGHS.Optimizer)
@@ -270,59 +274,17 @@ function test_iis()
     @constraint(model, c2, x + y >= 2)
     @objective(model, Max, x + y)
     optimize!(model)
-    data = ModelAnalyzer.analyze(ModelAnalyzer.Infeasibility.Analyzer(), model)
-    list = ModelAnalyzer.list_of_issue_types(data)
-    @test length(list) == 0
-    data = ModelAnalyzer.analyze(
-        ModelAnalyzer.Infeasibility.Analyzer(),
-        model,
-        optimizer = HiGHS.Optimizer,
+    data = MOCS.compute_conflicts(JuMP.backend(model))
+    @test length(data) == 0
+    data =
+        MOCS.compute_conflicts(JuMP.backend(model), optimizer = HiGHS.Optimizer)
+    @test length(data) == 1
+    @test data[].irreducible
+    @test data[].metadata == MOCS.NoData()
+    @test _isequal_unordered(
+        data[].constraints,
+        [JuMP.index(c2), JuMP.index(c1)],
     )
-    list = ModelAnalyzer.list_of_issue_types(data)
-    @test length(list) == 1
-    ret = ModelAnalyzer.list_of_issues(data, list[1])
-    @test length(ret) == 1
-    @test length(ret[].constraint) == 2
-    @test Set([ret[].constraint[1], ret[].constraint[2]]) ==
-          Set(JuMP.index.([c2, c1]))
-    iis = ModelAnalyzer.constraints(ret[], model)
-    @test length(iis) == 2
-    @test Set(iis) == Set([c2, c1])
-    #
-    buf = IOBuffer()
-    ModelAnalyzer.summarize(
-        buf,
-        ModelAnalyzer.Infeasibility.IrreducibleInfeasibleSubset,
-    )
-    str = String(take!(buf))
-    @test startswith(str, "# `IrreducibleInfeasibleSubset`")
-    ModelAnalyzer.summarize(
-        buf,
-        ModelAnalyzer.Infeasibility.IrreducibleInfeasibleSubset,
-        verbose = false,
-    )
-    str = String(take!(buf))
-    @test str == "# IrreducibleInfeasibleSubset"
-    #
-    ModelAnalyzer.summarize(buf, ret[1], verbose = true)
-    str = String(take!(buf))
-    @test startswith(str, "Irreducible Infeasible Subset: ")
-    @test contains(str, ", ")
-    ModelAnalyzer.summarize(buf, ret[1], verbose = false)
-    str = String(take!(buf))
-    @test startswith(str, "IIS: ")
-    @test contains(str, ", ")
-
-    buf = IOBuffer()
-    Base.show(buf, data)
-    str = String(take!(buf))
-    @test startswith(str, "Infeasibility analysis found 1 issues")
-
-    ModelAnalyzer.summarize(buf, data, verbose = true)
-    str = String(take!(buf))
-    @test startswith(str, "## Infeasibility Analysis\n\n")
-    ModelAnalyzer.summarize(buf, data, verbose = false)
-    ModelAnalyzer.summarize(buf, data, verbose = true)
     return
 end
 
@@ -335,21 +297,15 @@ function test_iis_free_var()
     @constraint(model, c2, x + y >= 2)
     @objective(model, Max, -2x + y)
     optimize!(model)
-    data = ModelAnalyzer.analyze(
-        ModelAnalyzer.Infeasibility.Analyzer(),
-        model,
-        optimizer = HiGHS.Optimizer,
+    data =
+        MOCS.compute_conflicts(JuMP.backend(model), optimizer = HiGHS.Optimizer)
+    @test length(data) == 1
+    @test data[].irreducible
+    @test data[].metadata == MOCS.NoData()
+    @test _isequal_unordered(
+        data[].constraints,
+        [JuMP.index(c2), JuMP.index(c1)],
     )
-    list = ModelAnalyzer.list_of_issue_types(data)
-    @test length(list) == 1
-    ret = ModelAnalyzer.list_of_issues(data, list[1])
-    @test length(ret) == 1
-    @test length(ret[].constraint) == 2
-    @test Set([ret[].constraint[1], ret[].constraint[2]]) ==
-          Set(JuMP.index.([c2, c1]))
-    iis = ModelAnalyzer.constraints(ret[], model)
-    @test length(iis) == 2
-    @test Set(iis) == Set([c2, c1])
     return
 end
 
@@ -363,26 +319,15 @@ function test_iis_multiple()
     @constraint(model, c2, x + y >= 2)
     @objective(model, Max, x + y)
     optimize!(model)
-    data = ModelAnalyzer.analyze(ModelAnalyzer.Infeasibility.Analyzer(), model)
-    list = ModelAnalyzer.list_of_issue_types(data)
-    @test length(list) == 0
-    data = ModelAnalyzer.analyze(
-        ModelAnalyzer.Infeasibility.Analyzer(),
-        model,
-        optimizer = HiGHS.Optimizer,
-    )
-    list = ModelAnalyzer.list_of_issue_types(data)
-    @test length(list) == 1
-    ret = ModelAnalyzer.list_of_issues(data, list[1])
-    @test length(ret) == 1
-    @test length(ret[].constraint) == 2
-    @test JuMP.index(c2) in Set([ret[].constraint[1], ret[].constraint[2]])
-    @test Set([ret[].constraint[1], ret[].constraint[2]]) ⊆
-          Set(JuMP.index.([c3, c2, c1]))
-    iis = ModelAnalyzer.constraints(ret[], model)
+    data =
+        MOCS.compute_conflicts(JuMP.backend(model), optimizer = HiGHS.Optimizer)
+    @test length(data) == 1
+    @test data[].irreducible
+    @test data[].metadata == MOCS.NoData()
+    iis = data[].constraints
     @test length(iis) == 2
-    @test Set(iis) ⊆ Set([c3, c2, c1])
-    @test c2 in iis
+    @test Set(iis) ⊆ Set([JuMP.index(c3), JuMP.index(c2), JuMP.index(c1)])
+    @test JuMP.index(c2) in Set(iis)
     return
 end
 
@@ -395,24 +340,15 @@ function test_iis_interval_right()
     @constraint(model, c2, x + y >= 2)
     @objective(model, Max, x + y)
     optimize!(model)
-    data = ModelAnalyzer.analyze(ModelAnalyzer.Infeasibility.Analyzer(), model)
-    list = ModelAnalyzer.list_of_issue_types(data)
-    @test length(list) == 0
-    data = ModelAnalyzer.analyze(
-        ModelAnalyzer.Infeasibility.Analyzer(),
-        model,
-        optimizer = HiGHS.Optimizer,
+    data =
+        MOCS.compute_conflicts(JuMP.backend(model), optimizer = HiGHS.Optimizer)
+    @test length(data) == 1
+    @test data[].irreducible
+    @test data[].metadata == MOCS.NoData()
+    @test _isequal_unordered(
+        data[].constraints,
+        [JuMP.index(c2), JuMP.index(c1)],
     )
-    list = ModelAnalyzer.list_of_issue_types(data)
-    @test length(list) == 1
-    ret = ModelAnalyzer.list_of_issues(data, list[1])
-    @test length(ret) == 1
-    @test length(ret[].constraint) == 2
-    @test Set([ret[].constraint[1], ret[].constraint[2]]) ==
-          Set(JuMP.index.([c2, c1]))
-    iis = ModelAnalyzer.constraints(ret[], model)
-    @test length(iis) == 2
-    @test Set(iis) == Set([c2, c1])
     return
 end
 
@@ -425,27 +361,15 @@ function test_iis_interval_left()
     @constraint(model, c2, 2 <= x + y <= 5)
     @objective(model, Max, x + y)
     optimize!(model)
-    data = ModelAnalyzer.analyze(ModelAnalyzer.Infeasibility.Analyzer(), model)
-    list = ModelAnalyzer.list_of_issue_types(data)
-    @test length(list) == 0
-    data = ModelAnalyzer.analyze(
-        ModelAnalyzer.Infeasibility.Analyzer(),
-        model,
-        optimizer = HiGHS.Optimizer,
+    data =
+        MOCS.compute_conflicts(JuMP.backend(model), optimizer = HiGHS.Optimizer)
+    @test length(data) == 1
+    @test data[].irreducible
+    @test data[].metadata == MOCS.NoData()
+    @test _isequal_unordered(
+        data[].constraints,
+        [JuMP.index(c2), JuMP.index(c1)],
     )
-    list = ModelAnalyzer.list_of_issue_types(data)
-    @test length(list) == 1
-    ret = ModelAnalyzer.list_of_issues(data, list[1])
-    @test length(ret) == 1
-    @test length(ret[].constraint) == 2
-    @test Set([ret[].constraint[1], ret[].constraint[2]]) ==
-          Set(JuMP.index.([c2, c1]))
-    iis = ModelAnalyzer.constraints(ret[], model)
-    @test length(iis) == 2
-    @test Set(iis) == Set([c2, c1])
-    iis = ModelAnalyzer.constraints(ret[], JuMP.backend(model))
-    @test length(iis) == 2
-    @test Set(iis) == Set(JuMP.index.([c2, c1]))
     return
 end
 
@@ -461,27 +385,18 @@ function test_iis_spare()
     @constraint(model, c2, x + y >= 2)
     @objective(model, Max, x + y)
     optimize!(model)
-    data = ModelAnalyzer.analyze(ModelAnalyzer.Infeasibility.Analyzer(), model)
-    list = ModelAnalyzer.list_of_issue_types(data)
-    @test length(list) == 0
-    data = ModelAnalyzer.analyze(
-        ModelAnalyzer.Infeasibility.Analyzer(),
-        model,
-        optimizer = HiGHS.Optimizer,
+    data =
+        MOCS.compute_conflicts(JuMP.backend(model), optimizer = HiGHS.Optimizer)
+    @test length(data) == 1
+    @test data[].irreducible
+    @test data[].metadata == MOCS.NoData()
+    @test _isequal_unordered(
+        data[].constraints,
+        [JuMP.index(c2), JuMP.index(c1)],
     )
-    list = ModelAnalyzer.list_of_issue_types(data)
-    @test length(list) == 1
-    ret = ModelAnalyzer.list_of_issues(data, list[1])
-    @test length(ret) == 1
-    @test length(ret[].constraint) == 2
-    @test Set([ret[].constraint[1], ret[].constraint[2]]) ==
-          Set(JuMP.index.([c2, c1]))
-    iis = ModelAnalyzer.constraints(ret[], model)
-    @test length(iis) == 2
-    @test Set(iis) == Set([c2, c1])
     return
 end
-=#
+
 end # module
 
 TestIIS.runtests()
