@@ -8,5 +8,8 @@ module MathOptConflictSolver
 import MathOptInterface as MOI
 
 include("iis.jl")
+include("bound.jl")
+include("range.jl")
+include("solver.jl")
 
 end # module MathOptConflictSolver
