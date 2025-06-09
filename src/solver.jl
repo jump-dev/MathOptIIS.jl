@@ -24,7 +24,7 @@ end
 
 function _elastic_filter(optimizer::Optimizer)
     T = Float64
-@show optimizer.optimizer
+
     model = MOI.instantiate(optimizer.optimizer)
     for (k, v) in optimizer.optimizer_attributes
         MOI.set(model, k, v)
