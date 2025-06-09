@@ -120,6 +120,17 @@ function MOI.get(optimizer::Optimizer, attr::MOI.Silent)
     return optimizer.verbose
 end
 
+struct SkipFeasibilityCheck <: MOI.AbstractOptimizerAttribute end
+
+function MOI.set(optimizer::Optimizer, attr::SkipFeasibilityCheck, value::Bool)
+    optimizer.skip_feasibility_check = value
+    return
+end
+
+function MOI.get(optimizer::Optimizer, attr::SkipFeasibilityCheck)
+    return optimizer.skip_feasibility_check
+end
+
 # struct MaxIIS end
 
 # function MOI.set(optimizer::Optimizer, attr::MaxIIS, value::Int)
@@ -202,10 +213,13 @@ function MOI.get(
     attr::ConstraintConflictStatus,
     con::MOI.ConstraintIndex,
 )
+    if attr.conflict_index > length(optimizer.results)
+        return MOI.NOT_IN_CONFLICT # or error
+    end
     if con in optimizer.results[attr.conflict_index].constraints
         return MOI.IN_CONFLICT
     end
-    return MOI.NOT_IN_CONFLICT # or error
+    return MOI.NOT_IN_CONFLICT
 end
 
 struct ListOfConstraintIndicesInConflict <: MOI.AbstractModelAttribute
@@ -213,11 +227,10 @@ struct ListOfConstraintIndicesInConflict <: MOI.AbstractModelAttribute
     ListOfConstraintIndicesInConflict(conflict_index = 1) = new(conflict_index)
 end
 
-function MOI.get(
-    optimizer::Optimizer,
-    attr::ListOfConstraintIndicesInConflict,
-    con::MOI.ConstraintIndex,
-)
+function MOI.get(optimizer::Optimizer, attr::ListOfConstraintIndicesInConflict)
+    if attr.conflict_index > length(optimizer.results)
+        return MOI.ConstraintIndex[]
+    end
     return optimizer.results[attr.conflict_index].constraints
 end
 

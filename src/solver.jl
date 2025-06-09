@@ -42,8 +42,13 @@ function _elastic_filter(optimizer::Optimizer)
     # might need to do something related to integers / binary
     relaxed_obj_type = MOI.get(model, MOI.ObjectiveFunctionType())
     relaxed_obj_func = MOI.get(model, MOI.ObjectiveFunction{relaxed_obj_type}())
-
     pure_relaxed_obj_func = relaxed_obj_func - base_obj_func
+
+    MOI.set(
+        model,
+        MOI.ObjectiveFunction{relaxed_obj_type}(),
+        pure_relaxed_obj_func,
+    )
 
     max_iterations = length(constraint_to_affine)
 
@@ -57,7 +62,7 @@ function _elastic_filter(optimizer::Optimizer)
     # we will try to set positive slacks to zero until the model infeasible
     # the constraints of the fixed slacks are a IIS candidate
 
-    for _ in 1:max_iterations
+    for i in 1:max_iterations
         if !_in_time(optimizer)
             return nothing
         end
@@ -158,21 +163,28 @@ function _elastic_filter(optimizer::Optimizer)
             MOI.set(model, MOI.ObjectiveSense(), MOI.FEASIBILITY_SENSE)
             MOI.optimize!(model)
             primal_status = MOI.get(model, MOI.PrimalStatus())
+            # the unbounded case:
             if primal_status in (MOI.FEASIBLE_POINT, MOI.NEARLY_FEASIBLE_POINT)
                 # this constraint is not in IIS
                 push!(cadidates, con)
                 _fix_slack(model, var, T)
                 MOI.set(model, MOI.ObjectiveSense(), obj_sense)
-                MOI.set(model, MOI.ObjectiveFunction{obj_type}(), obj_func)
-            else
-                error(
-                    "IIS failed due numerical instability, got status $status,",
-                    "then, for MOI.FEASIBILITY_SENSE objective, got primal status $primal_status",
+                MOI.set(
+                    model,
+                    MOI.ObjectiveFunction{relaxed_obj_type}(),
+                    pure_relaxed_obj_func,
                 )
+                # the both primal and dual infeasible case:
+                # else
+                #     nothing
             end
         else
             error("IIS failed due numerical instability, got status $status")
         end
+    end
+
+    if isempty(cadidates)
+        return nothing
     end
 
     pre_iis = Set(cadidates)
