@@ -41,20 +41,20 @@ function _range_infeasibility!(
             return range_consistent
         end
         func = MOI.get(optimizer.original_model, MOI.ConstraintFunction(), con)
-        # failed = false
+        failed = false
         list_of_variables = MOI.VariableIndex[]
         interval = _eval_variables(func) do var_idx
             push!(list_of_variables, var_idx)
             # this only fails if we allow continuing after bounds issues
-            # if !haskey(variables, var_idx)
-            #     failed = true
-            #     return Interval(-Inf, Inf)
-            # end
+            if !haskey(variables, var_idx)
+                failed = true
+                return Interval(-Inf, Inf)
+            end
             return variables[var_idx]
         end
-        # if failed
-        #     continue
-        # end
+        if failed
+            continue
+        end
         set = MOI.get(optimizer.original_model, MOI.ConstraintSet(), con)
         if _invalid_range(set, interval)
             cons = Set{MOI.ConstraintIndex}()

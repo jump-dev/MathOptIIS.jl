@@ -191,6 +191,61 @@ function test_range()
     return
 end
 
+function test_range_and_bound()
+    model = Model()
+    @variable(model, 10 <= x <= 11)
+    @variable(model, 1 <= y <= 11)
+    @variable(model, 1 <= z <= 0)
+    @constraint(model, c, x + y <= 1)
+    @objective(model, Max, x + y)
+    solver = MOCS.Optimizer()
+    MOI.set(solver, MOCS.InfeasibleModel(), JuMP.backend(model))
+    MOI.compute_conflict!(solver)
+    data = solver.results
+    @test length(data) == 1
+    @test _isequal_unordered(
+        data[].constraints,
+        [
+            JuMP.index(LowerBoundRef(z)),
+            JuMP.index(UpperBoundRef(z)),
+        ],
+    )
+    @test MOI.get(solver, MOCS.StopIfInfeasibleBounds()) == true
+    MOI.set(solver, MOCS.StopIfInfeasibleBounds(), false)
+    @test MOI.get(solver, MOCS.StopIfInfeasibleBounds()) == false
+    MOI.compute_conflict!(solver)
+    data = solver.results
+    @test length(data) == 2
+    @test _isequal_unordered(
+        data[1].constraints,
+        [
+            JuMP.index(LowerBoundRef(z)),
+            JuMP.index(UpperBoundRef(z)),
+        ],
+    )
+    @test _isequal_unordered(
+        data[2].constraints,
+        [
+            JuMP.index(c),
+            JuMP.index(UpperBoundRef(x)),
+            JuMP.index(LowerBoundRef(x)),
+            JuMP.index(UpperBoundRef(y)),
+            JuMP.index(LowerBoundRef(y)),
+        ],
+    )
+    @test data[2].irreducible
+    @test data[2].metadata ==
+          MOCS.RangeData(11.0, 22.0, MOI.LessThan{Float64}(1.0))
+    @test MOI.get(solver, MOCS.StopIfInfeasibleRanges()) == true
+    MOI.set(solver, MOCS.StopIfInfeasibleRanges(), false)
+    @test MOI.get(solver, MOCS.StopIfInfeasibleRanges()) == false
+    MOI.set(solver, MOCS.InnerOptimizer(), HiGHS.Optimizer)
+    MOI.compute_conflict!(solver)
+    data = solver.results
+    @test length(data) == 2
+    return
+end
+
 function test_range_neg()
     model = Model()
     @variable(model, 10 <= x <= 11)

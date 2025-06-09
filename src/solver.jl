@@ -135,7 +135,7 @@ function _elastic_filter(optimizer::Optimizer)
     obj_sense = MOI.get(model, MOI.ObjectiveSense())
 
     # deletion filter
-    cadidates = MOI.ConstraintIndex[]
+    candidates = MOI.ConstraintIndex[]
     for (con, var) in de_elastisized
         if !_in_time(optimizer)
             return nothing
@@ -153,7 +153,7 @@ function _elastic_filter(optimizer::Optimizer)
             MOI.LOCALLY_SOLVED,
             MOI.ALMOST_LOCALLY_SOLVED,
         )
-            push!(cadidates, con)
+            push!(candidates, con)
             _fix_slack(model, var, T)
         elseif status in ( # possibily primal unbounded statuses
             MOI.INFEASIBLE_OR_UNBOUNDED,
@@ -166,7 +166,7 @@ function _elastic_filter(optimizer::Optimizer)
             # the unbounded case:
             if primal_status in (MOI.FEASIBLE_POINT, MOI.NEARLY_FEASIBLE_POINT)
                 # this constraint is not in IIS
-                push!(cadidates, con)
+                push!(candidates, con)
                 _fix_slack(model, var, T)
                 MOI.set(model, MOI.ObjectiveSense(), obj_sense)
                 MOI.set(
@@ -183,11 +183,11 @@ function _elastic_filter(optimizer::Optimizer)
         end
     end
 
-    if isempty(cadidates)
+    if isempty(candidates)
         return nothing
     end
 
-    pre_iis = Set(cadidates)
+    pre_iis = Set(candidates)
     iis = MOI.ConstraintIndex[]
     for (F, S) in
         MOI.get(optimizer.original_model, MOI.ListOfConstraintTypesPresent())
