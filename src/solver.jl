@@ -73,14 +73,7 @@ function _elastic_filter(optimizer::Optimizer)
             MOI.DUAL_INFEASIBLE,
             MOI.ALMOST_DUAL_INFEASIBLE,
         )
-            #try with a pure relaxation objective
-            MOI.set(
-                model,
-                MOI.ObjectiveFunction{relaxed_obj_type}(),
-                pure_relaxed_obj_func,
-            )
-            changed_obj = true
-            MOI.optimize!(model)
+            #
         end
         if status in
            (MOI.INFEASIBLE, MOI.ALMOST_INFEASIBLE, MOI.ALMOST_INFEASIBLE)
@@ -117,14 +110,6 @@ function _elastic_filter(optimizer::Optimizer)
                 end
             end
         end
-    end
-
-    if changed_obj
-        MOI.set(
-            model,
-            MOI.ObjectiveFunction{relaxed_obj_type}(),
-            relaxed_obj_func,
-        )
     end
 
     # consider deleting all no iis constraints
