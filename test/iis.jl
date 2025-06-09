@@ -205,10 +205,7 @@ function test_range_and_bound()
     @test length(data) == 1
     @test _isequal_unordered(
         data[].constraints,
-        [
-            JuMP.index(LowerBoundRef(z)),
-            JuMP.index(UpperBoundRef(z)),
-        ],
+        [JuMP.index(LowerBoundRef(z)), JuMP.index(UpperBoundRef(z))],
     )
     @test MOI.get(solver, MOCS.StopIfInfeasibleBounds()) == true
     MOI.set(solver, MOCS.StopIfInfeasibleBounds(), false)
@@ -218,10 +215,7 @@ function test_range_and_bound()
     @test length(data) == 2
     @test _isequal_unordered(
         data[1].constraints,
-        [
-            JuMP.index(LowerBoundRef(z)),
-            JuMP.index(UpperBoundRef(z)),
-        ],
+        [JuMP.index(LowerBoundRef(z)), JuMP.index(UpperBoundRef(z))],
     )
     @test _isequal_unordered(
         data[2].constraints,
