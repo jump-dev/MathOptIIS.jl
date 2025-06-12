@@ -76,7 +76,7 @@ function _elastic_filter(optimizer::Optimizer)
             #
         end
         if status in
-           (MOI.INFEASIBLE, MOI.ALMOST_INFEASIBLE, MOI.ALMOST_INFEASIBLE)
+           (MOI.INFEASIBLE, MOI.ALMOST_INFEASIBLE, MOI.LOCALLY_INFEASIBLE)
             break
         end
         for (con, func) in constraint_to_affine
@@ -129,7 +129,7 @@ function _elastic_filter(optimizer::Optimizer)
         MOI.optimize!(model)
         status = MOI.get(model, MOI.TerminationStatus())
         if status in
-           (MOI.INFEASIBLE, MOI.ALMOST_INFEASIBLE, MOI.ALMOST_INFEASIBLE)
+           (MOI.INFEASIBLE, MOI.ALMOST_INFEASIBLE, MOI.LOCALLY_INFEASIBLE)
             # this constraint is not in IIS
             # hence it remains unfixed
         elseif status in (

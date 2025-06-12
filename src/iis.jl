@@ -409,7 +409,10 @@ function _feasibility_check(optimizer::Optimizer)
     if optimizer.verbose
         println("Original model primal status: $(primal_status)")
     end
-    if primal_status in (MOI.FEASIBLE_POINT, MOI.NEARLY_FEASIBLE_POINT)
+    if primal_status in (MOI.FEASIBLE_POINT, MOI.NEARLY_FEASIBLE_POINT) && !(
+        termination_status in
+        (MOI.INFEASIBLE, MOI.ALMOST_INFEASIBLE, MOI.LOCALLY_INFEASIBLE)
+    )
         return true
     end
     return false

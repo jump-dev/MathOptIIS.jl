@@ -639,6 +639,33 @@ function test_iis_spare()
     return
 end
 
+function test_iis_binary()
+    model = Model(HiGHS.Optimizer)
+    set_silent(model)
+    @variable(model, x, Bin)
+    @constraint(model, c1, x == 1 / 2)
+    optimize!(model)
+    @show termination_status(model)
+    @show primal_status(model)
+    solver = MOCS.Optimizer()
+    MOI.set(solver, MOCS.InfeasibleModel(), JuMP.backend(model))
+    MOI.set(solver, MOCS.InnerOptimizer(), HiGHS.Optimizer)
+    MOI.compute_conflict!(solver)
+    data = solver.results
+    @test length(data) == 1
+    @test data[].irreducible
+    @test data[].metadata == MOCS.NoData()
+    @test _isequal_unordered(data[].constraints, [JuMP.index(c1)])
+    @test MOI.get(solver, MOI.ConstraintConflictStatus(), JuMP.index(c1)) ==
+          MOI.IN_CONFLICT
+    @test MOI.get(
+        solver,
+        MOI.ConstraintConflictStatus(),
+        JuMP.index(BinaryRef(x)),
+    ) == MOI.MAYBE_IN_CONFLICT
+    return
+end
+
 end # module
 
 TestIIS.runtests()
