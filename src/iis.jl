@@ -6,9 +6,23 @@
 abstract type AbstractAdditionalData end
 
 struct InfeasibilityData
+    # IIS constraints set
     constraints::Vector{MOI.ConstraintIndex}
+    # variable-set constraints only for NoData IIS (from the iis solver)
+    # this will be an empty vector for most types of IIS
+    maybe_constraints::Vector{MOI.ConstraintIndex}
+    # indicates if the IIS is irreducible
     irreducible::Bool
+    # additional data
     metadata::AbstractAdditionalData
+    function InfeasibilityData(
+        constraints::Vector{<:MOI.ConstraintIndex},
+        irreducible::Bool,
+        metadata::AbstractAdditionalData;
+        maybe_constraints::Vector{MOI.ConstraintIndex} = MOI.ConstraintIndex[],
+    )
+        return new(constraints, maybe_constraints, irreducible, metadata)
+    end
 end
 
 struct BoundsData <: AbstractAdditionalData
@@ -218,6 +232,8 @@ function MOI.get(
     end
     if con in optimizer.results[attr.conflict_index].constraints
         return MOI.IN_CONFLICT
+    elseif con in optimizer.results[attr.conflict_index].maybe_constraints
+        return MOI.MAYBE_IN_CONFLICT
     end
     return MOI.NOT_IN_CONFLICT
 end
@@ -310,10 +326,72 @@ function MOI.compute_conflict!(optimizer::Optimizer)
     iis = _elastic_filter(optimizer)
     # for now, only one iis is computed
     if iis !== nothing
-        push!(optimizer.results, InfeasibilityData(iis, true, NoData()))
+        maybe_constraints = _get_variables_in_constraints(optimizer, iis)
+        push!(
+            optimizer.results,
+            InfeasibilityData(
+                iis,
+                true,
+                NoData(),
+                maybe_constraints = maybe_constraints,
+            ),
+        )
         optimizer.status = MOI.CONFLICT_FOUND
     end
 
+    return
+end
+
+function _get_variables_in_constraints(
+    optimizer::Optimizer,
+    con::Vector{MOI.ConstraintIndex},
+)
+    variables = Set{MOI.VariableIndex}()
+    for c in con
+        _get_variables_in_constraints!(optimizer, c, variables)
+    end
+    con_types =
+        MOI.get(optimizer.original_model, MOI.ListOfConstraintTypesPresent())
+    variable_constraints = MOI.ConstraintIndex[]
+    for (F, S) in con_types
+        if F <: MOI.VariableIndex
+            _variable_constraints = MOI.get(
+                optimizer.original_model,
+                MOI.ListOfConstraintIndices{F,S}(),
+            )
+            for con in _variable_constraints
+                var = MOI.get(
+                    optimizer.original_model,
+                    MOI.ConstraintFunction(),
+                    con,
+                )
+                if var in variables
+                    push!(variable_constraints, con)
+                end
+            end
+        end
+    end
+    return variable_constraints
+end
+
+function _get_variables_in_constraints!(
+    optimizer::Optimizer,
+    con::MOI.ConstraintIndex{F},
+    variables::Set{MOI.VariableIndex},
+) where {F<:MOI.ScalarAffineFunction}
+    func = MOI.get(optimizer.original_model, MOI.ConstraintFunction(), con)
+    for term in func.terms
+        push!(variables, term.variable)
+    end
+    return
+end
+
+function _get_variables_in_constraints!(
+    optimizer::Optimizer,
+    con::MOI.ConstraintIndex{F},
+    variables::Set{MOI.VariableIndex},
+) where {F}
+    # skip
     return
 end
 

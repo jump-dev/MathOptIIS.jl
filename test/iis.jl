@@ -598,6 +598,44 @@ function test_iis_spare()
         data[].constraints,
         [JuMP.index(c2), JuMP.index(c1)],
     )
+    @test MOI.get(solver, MOI.ConstraintConflictStatus(), JuMP.index(c0)) ==
+          MOI.NOT_IN_CONFLICT
+    @test MOI.get(solver, MOI.ConstraintConflictStatus(), JuMP.index(c00)) ==
+          MOI.NOT_IN_CONFLICT
+    @test MOI.get(solver, MOI.ConstraintConflictStatus(), JuMP.index(c1)) ==
+          MOI.IN_CONFLICT
+    @test MOI.get(solver, MOI.ConstraintConflictStatus(), JuMP.index(c2)) ==
+          MOI.IN_CONFLICT
+    @test MOI.get(
+        solver,
+        MOI.ConstraintConflictStatus(),
+        JuMP.index(LowerBoundRef(x)),
+    ) == MOI.MAYBE_IN_CONFLICT
+    @test MOI.get(
+        solver,
+        MOI.ConstraintConflictStatus(),
+        JuMP.index(LowerBoundRef(y)),
+    ) == MOI.MAYBE_IN_CONFLICT
+    @test MOI.get(
+        solver,
+        MOI.ConstraintConflictStatus(),
+        JuMP.index(UpperBoundRef(x)),
+    ) == MOI.MAYBE_IN_CONFLICT
+    @test MOI.get(
+        solver,
+        MOI.ConstraintConflictStatus(),
+        JuMP.index(UpperBoundRef(y)),
+    ) == MOI.MAYBE_IN_CONFLICT
+    @test MOI.get(
+        solver,
+        MOI.ConstraintConflictStatus(),
+        JuMP.index(LowerBoundRef(z)),
+    ) == MOI.NOT_IN_CONFLICT
+    @test MOI.get(
+        solver,
+        MOI.ConstraintConflictStatus(),
+        JuMP.index(UpperBoundRef(z)),
+    ) == MOI.NOT_IN_CONFLICT
     return
 end
 
