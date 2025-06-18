@@ -323,6 +323,9 @@ function MOI.compute_conflict!(optimizer::Optimizer)
         )
         return
     end
+    if optimizer.verbose
+        println("Starting elastic filter solver.")
+    end
     iis = _elastic_filter(optimizer)
     # for now, only one iis is computed
     if iis !== nothing
@@ -337,6 +340,12 @@ function MOI.compute_conflict!(optimizer::Optimizer)
             ),
         )
         optimizer.status = MOI.CONFLICT_FOUND
+    end
+    iis_infeasibilities = ifelse(iis === nothing, 0, 1)
+    if optimizer.verbose
+        println(
+            "Complete elastic filter solver found $iis_infeasibilities infeasibilities.",
+        )
     end
 
     return

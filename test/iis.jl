@@ -429,8 +429,14 @@ function test_pass_attribute()
     MOI.set(solver, MOCS.InnerOptimizer(), HiGHS.Optimizer)
     MOI.set(solver, MOI.TimeLimitSec(), 5.0)
     @test MOI.get(solver, MOI.TimeLimitSec()) == 5.0
-    MOI.set(solver, MOI.Silent(), false)
     @test MOI.get(solver, MOI.Silent()) == false
+    MOI.set(solver, MOI.Silent(), true)
+    @test MOI.get(solver, MOI.Silent()) == true
+    MOI.compute_conflict!(solver)
+    data = solver.results
+    @test length(data) == 0
+    MOI.set(solver, MOCS.SkipFeasibilityCheck(), true)
+    @test MOI.get(solver, MOCS.SkipFeasibilityCheck())
     MOI.compute_conflict!(solver)
     data = solver.results
     @test length(data) == 0
