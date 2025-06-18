@@ -240,6 +240,36 @@ function test_range_and_bound()
     return
 end
 
+function test_range_and_bound_2()
+    model = Model()
+    @variable(model, 10 <= x <= 11)
+    @variable(model, 1 <= y <= 11)
+    @variable(model, 1 <= z <= 0)
+    @constraint(model, c, x + y + z <= 1)
+    @objective(model, Max, x + y)
+    solver = MOCS.Optimizer()
+    MOI.set(solver, MOCS.InfeasibleModel(), JuMP.backend(model))
+    MOI.compute_conflict!(solver)
+    data = solver.results
+    @test length(data) == 1
+    @test _isequal_unordered(
+        data[].constraints,
+        [JuMP.index(LowerBoundRef(z)), JuMP.index(UpperBoundRef(z))],
+    )
+    @test MOI.get(solver, MOCS.StopIfInfeasibleBounds()) == true
+    MOI.set(solver, MOCS.StopIfInfeasibleBounds(), false)
+    @test MOI.get(solver, MOCS.StopIfInfeasibleBounds()) == false
+    MOI.compute_conflict!(solver)
+    data = solver.results
+    # the result is only one conflic again because the range fail cant be computed
+    @test length(data) == 1
+    @test _isequal_unordered(
+        data[1].constraints,
+        [JuMP.index(LowerBoundRef(z)), JuMP.index(UpperBoundRef(z))],
+    )
+    return
+end
+
 function test_range_neg()
     model = Model()
     @variable(model, 10 <= x <= 11)
