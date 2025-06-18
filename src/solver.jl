@@ -26,11 +26,37 @@ function _elastic_filter(optimizer::Optimizer)
     T = Float64
 
     model = MOI.instantiate(optimizer.optimizer)
+    MOI.set(model, MOI.Silent(), true)
     for (k, v) in optimizer.optimizer_attributes
         MOI.set(model, k, v)
     end
     reference_map = MOI.copy_to(model, optimizer.original_model)
-    MOI.set(model, MOI.Silent(), true)
+
+    if optimizer.ignore_integrality
+        _cp_constraint_types =
+            MOI.get(model, MOI.ListOfConstraintTypesPresent())
+        # _removed_constraints = Tuple[]
+        for (F, S) in _cp_constraint_types
+            con_list = []
+            if S in (
+                MOI.ZeroOne,
+                MOI.Integer,
+                MOI.Semicontinuous{T},
+                MOI.Semiinteger{T},
+                MOI.SOS1{T},
+                MOI.SOS2{T},
+            ) || S <: MOI.Indicator
+                con_list = MOI.get(model, MOI.ListOfConstraintIndices{F,S}())
+            end
+            for con in con_list
+                MOI.delete(model, con)
+                # # save removed constraints
+                # func = MOI.get(model, MOI.ConstraintFunction(), con)
+                # set = MOI.get(model, MOI.ConstraintSet(), con)
+                # push!(_removed_constraints, (func, set))
+            end
+        end
+    end
 
     obj_sense = MOI.get(model, MOI.ObjectiveSense())
     base_obj_type = MOI.get(model, MOI.ObjectiveFunctionType())
@@ -119,8 +145,15 @@ function _elastic_filter(optimizer::Optimizer)
     obj_func = MOI.get(model, MOI.ObjectiveFunction{obj_type}())
     obj_sense = MOI.get(model, MOI.ObjectiveSense())
 
-    # deletion filter
     candidates = MOI.ConstraintIndex[]
+    if !optimizer.deletion_filter
+        for (con, var) in de_elastisized
+            push!(candidates, con)
+        end
+        empty!(de_elastisized)
+    end
+
+    # deletion filter
     for (con, var) in de_elastisized
         if !_in_time(optimizer)
             return nothing

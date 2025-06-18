@@ -432,6 +432,9 @@ function test_pass_attribute()
     @test MOI.get(solver, MOI.Silent()) == false
     MOI.set(solver, MOI.Silent(), true)
     @test MOI.get(solver, MOI.Silent()) == true
+    @test MOI.get(solver, MOCS.ElasticFilterTolerance()) == 1e-5
+    MOI.set(solver, MOCS.ElasticFilterTolerance(), 1e-3)
+    @test MOI.get(solver, MOCS.ElasticFilterTolerance()) == 1e-3
     MOI.compute_conflict!(solver)
     data = solver.results
     @test length(data) == 0
@@ -476,6 +479,70 @@ function test_iis()
     solver = MOCS.Optimizer()
     MOI.set(solver, MOCS.InfeasibleModel(), JuMP.backend(model))
     MOI.set(solver, MOCS.InnerOptimizer(), HiGHS.Optimizer)
+    MOI.compute_conflict!(solver)
+    data = solver.results
+    @test length(data) == 1
+    @test data[].irreducible
+    @test data[].metadata == MOCS.NoData()
+    @test _isequal_unordered(
+        data[].constraints,
+        [JuMP.index(c2), JuMP.index(c1)],
+    )
+    return
+end
+
+function test_iis_no_deletion_filter()
+    model = Model(HiGHS.Optimizer)
+    set_silent(model)
+    @variable(model, 0 <= x <= 10)
+    @variable(model, 0 <= y <= 20)
+    @constraint(model, c1, x + y <= 1)
+    @constraint(model, c2, x + y >= 2)
+    @objective(model, Max, x + y)
+    optimize!(model)
+    solver = MOCS.Optimizer()
+    MOI.set(solver, MOCS.InfeasibleModel(), JuMP.backend(model))
+    MOI.compute_conflict!(solver)
+    data = solver.results
+    @test length(data) == 0
+    solver = MOCS.Optimizer()
+    MOI.set(solver, MOCS.InfeasibleModel(), JuMP.backend(model))
+    MOI.set(solver, MOCS.InnerOptimizer(), HiGHS.Optimizer)
+    @test MOI.get(solver, MOCS.DeletionFilter()) == true
+    MOI.set(solver, MOCS.DeletionFilter(), false)
+    @test MOI.get(solver, MOCS.DeletionFilter()) == false
+    MOI.compute_conflict!(solver)
+    data = solver.results
+    @test length(data) == 1
+    @test data[].irreducible
+    @test data[].metadata == MOCS.NoData()
+    @test _isequal_unordered(
+        data[].constraints,
+        [JuMP.index(c2), JuMP.index(c1)],
+    )
+    return
+end
+
+function test_iis_ignore_integrality()
+    model = Model(HiGHS.Optimizer)
+    set_silent(model)
+    @variable(model, 0 <= x <= 10)
+    @variable(model, 0 <= y <= 20, Bin)
+    @constraint(model, c1, x + y <= 1)
+    @constraint(model, c2, x + y >= 2)
+    @objective(model, Max, x + y)
+    optimize!(model)
+    solver = MOCS.Optimizer()
+    MOI.set(solver, MOCS.InfeasibleModel(), JuMP.backend(model))
+    MOI.compute_conflict!(solver)
+    data = solver.results
+    @test length(data) == 0
+    solver = MOCS.Optimizer()
+    MOI.set(solver, MOCS.InfeasibleModel(), JuMP.backend(model))
+    MOI.set(solver, MOCS.InnerOptimizer(), HiGHS.Optimizer)
+    @test MOI.get(solver, MOCS.ElasticFilterIgnoreIntegrality()) == false
+    MOI.set(solver, MOCS.ElasticFilterIgnoreIntegrality(), true)
+    @test MOI.get(solver, MOCS.ElasticFilterIgnoreIntegrality()) == true
     MOI.compute_conflict!(solver)
     data = solver.results
     @test length(data) == 1

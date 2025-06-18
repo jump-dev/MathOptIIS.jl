@@ -55,20 +55,16 @@ Base.@kwdef mutable struct Optimizer
     time_limit::Float64 = Inf
     verbose::Bool = false
     skip_feasibility_check::Bool = false
-    # max_iis::Int = typemax(Int)
-    # skip_bounds::Bool = false # used to save time
-    # skip_ranges::Bool = false # used to save time
     stop_if_infeasible_bounds::Bool = true
     stop_if_infeasible_ranges::Bool = true
-    # deletion_filter::Bool = true
+    deletion_filter::Bool = true
     elastic_filter_tolerance::Float64 = 1e-5
-    # ignore_integrality::Bool = false
+    ignore_integrality::Bool = false
     #
     # result data
     start_time::Float64 = NaN
     status::MOI.ConflictStatusCode = MOI.COMPUTE_CONFLICT_NOT_CALLED
     results::Vector{InfeasibilityData} = InfeasibilityData[]
-    # status_raw::String = ""
 end
 
 struct InfeasibleModel end
@@ -145,17 +141,6 @@ function MOI.get(optimizer::Optimizer, attr::SkipFeasibilityCheck)
     return optimizer.skip_feasibility_check
 end
 
-# struct MaxIIS end
-
-# function MOI.set(optimizer::Optimizer, attr::MaxIIS, value::Int)
-#     optimizer.max_iis = value
-#     return
-# end
-
-# function MOI.get(optimizer::Optimizer, attr::MaxIIS)
-#     return optimizer.max_iis
-# end
-
 struct StopIfInfeasibleBounds end
 
 function MOI.set(
@@ -186,16 +171,42 @@ function MOI.get(optimizer::Optimizer, attr::StopIfInfeasibleRanges)
     return optimizer.stop_if_infeasible_ranges
 end
 
-# struct DeletionFilter end
+struct DeletionFilter end
 
-# function MOI.set(optimizer::Optimizer, attr::DeletionFilter, value::Bool)
-#     optimizer.deletion_filter = value
-#     return
-# end
+function MOI.set(optimizer::Optimizer, attr::DeletionFilter, value::Bool)
+    optimizer.deletion_filter = value
+    return
+end
 
-# function MOI.get(optimizer::Optimizer, attr::DeletionFilter)
-#     return optimizer.deletion_filter
-# end
+function MOI.get(optimizer::Optimizer, attr::DeletionFilter)
+    return optimizer.deletion_filter
+end
+
+struct ElasticFilterTolerance end
+
+function MOI.set(optimizer::Optimizer, ::ElasticFilterTolerance, value::Float64)
+    optimizer.elastic_filter_tolerance = value
+    return
+end
+
+function MOI.get(optimizer::Optimizer, ::ElasticFilterTolerance)
+    return optimizer.elastic_filter_tolerance
+end
+
+struct ElasticFilterIgnoreIntegrality end
+
+function MOI.set(
+    optimizer::Optimizer,
+    ::ElasticFilterIgnoreIntegrality,
+    value::Bool,
+)
+    optimizer.ignore_integrality = value
+    return
+end
+
+function MOI.get(optimizer::Optimizer, ::ElasticFilterIgnoreIntegrality)
+    return optimizer.ignore_integrality
+end
 
 function MOI.get(optimizer::Optimizer, attr::MOI.ConflictStatus)
     return optimizer.status
