@@ -4,7 +4,21 @@
 [![codecov](https://codecov.io/gh/jump-dev/MathOptIIS.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/jump-dev/MathOptIIS.jl)
 
 [MathOptIIS.jl](https://github.com/jump-dev/MathOptIIS.jl) is a
-basic conflict solver for MathOptInterface.jl.
+basic IIS solver for MathOptInterface.jl.
+
+## IIS
+
+Yes, IIS because it might mean:
+
+1. Irreducible Infeasible Set
+2. Irreducibly Inconsistent Set
+3. Irreducible Infeasible Subsystem
+4. Infeasible Irreducible System
+5. Irreducible Inconsistent Subsystem
+6. Irreducibly Inconsistent System
+7. Minimal Conflict
+
+So, IIS is almost the only consensus.
 
 ## License
 
