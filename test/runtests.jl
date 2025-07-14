@@ -315,7 +315,8 @@ function test_range_equalto()
         [JuMP.index(c), JuMP.index(FixRef(x)), JuMP.index(FixRef(y))],
     )
     @test data[].irreducible
-    @test data[].metadata == MOIIS.RangeData(3.0, 3.0, MOI.EqualTo{Float64}(1.0))
+    @test data[].metadata ==
+          MOIIS.RangeData(3.0, 3.0, MOI.EqualTo{Float64}(1.0))
     return
 end
 
@@ -335,7 +336,8 @@ function test_range_equalto_2()
         [JuMP.index(c), JuMP.index(FixRef(x)), JuMP.index(FixRef(y))],
     )
     @test data[].irreducible
-    @test data[].metadata == MOIIS.RangeData(7.0, 7.0, MOI.EqualTo{Float64}(1.0))
+    @test data[].metadata ==
+          MOIIS.RangeData(7.0, 7.0, MOI.EqualTo{Float64}(1.0))
     return
 end
 
