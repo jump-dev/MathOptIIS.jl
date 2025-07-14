@@ -7,7 +7,7 @@ module TestIIS
 
 import HiGHS
 using JuMP
-import MathOptConflictSolver as MOCS
+import MathOptIIS as MOCS
 using Test
 
 function runtests()

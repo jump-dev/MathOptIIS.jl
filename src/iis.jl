@@ -272,7 +272,7 @@ function MOI.compute_conflict!(optimizer::Optimizer)
     optimizer.start_time = time()
 
     if optimizer.verbose
-        println("Starting MathOptConflictSolver IIS search.")
+        println("Starting MathOptIIS IIS search.")
     end
 
     T = Float64

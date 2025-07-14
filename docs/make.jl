@@ -1,8 +1,8 @@
-using Documenter, MathOptConflictSolver, JuMP
+using Documenter, MathOptIIS, JuMP
 
-makedocs(; sitename = "MathOptConflictSolver.jl documentation")
+makedocs(; sitename = "MathOptIIS.jl documentation")
 
 deploydocs(;
-    repo = "github.com/jump-dev/MathOptConflictSolver.jl.git",
+    repo = "github.com/jump-dev/MathOptIIS.jl.git",
     push_preview = true,
 )
