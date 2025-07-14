@@ -25,14 +25,60 @@ function test_bounds()
     model = Model()
     @variable(model, 0 <= x <= 1)
     @variable(model, 2 <= y <= 1)
-    @constraint(model, x + y <= 1)
+    @constraint(model, c, x + y <= 1)
     @objective(model, Max, x + y)
-    data = MOCS.compute_conflicts(JuMP.backend(model))
+    solver = MOCS.Optimizer()
+    @test MOI.get(solver, MOI.ConflictStatus()) ==
+          MOI.COMPUTE_CONFLICT_NOT_CALLED
+    MOI.set(solver, MOCS.InfeasibleModel(), JuMP.backend(model))
+    MOI.compute_conflict!(solver)
+    data = solver.results
     @test length(data) == 1
     @test data[].constraints ==
           [JuMP.index(LowerBoundRef(y)), JuMP.index(UpperBoundRef(y))]
     @test data[].irreducible
     @test data[].metadata == MOCS.BoundsData(2.0, 1.0)
+    @test MOI.get(solver, MOI.ConflictStatus()) == MOI.CONFLICT_FOUND
+    @test MOI.get(solver, MOI.ConstraintConflictStatus(), JuMP.index(c)) ==
+          MOI.NOT_IN_CONFLICT
+    @test MOI.get(
+        solver,
+        MOI.ConstraintConflictStatus(),
+        JuMP.index(LowerBoundRef(y)),
+    ) == MOI.IN_CONFLICT
+    @test MOI.get(
+        solver,
+        MOI.ConstraintConflictStatus(),
+        JuMP.index(UpperBoundRef(y)),
+    ) == MOI.IN_CONFLICT
+    @test MOI.get(solver, MOCS.ConflictCount()) == 1
+    @test MOI.get(
+        solver,
+        MOCS.ConstraintConflictStatus(1),
+        JuMP.index(LowerBoundRef(y)),
+    ) == MOI.IN_CONFLICT
+    @test MOI.get(
+        solver,
+        MOCS.ConstraintConflictStatus(1),
+        JuMP.index(UpperBoundRef(y)),
+    ) == MOI.IN_CONFLICT
+    @test MOI.get(solver, MOCS.ConstraintConflictStatus(1), JuMP.index(c)) ==
+          MOI.NOT_IN_CONFLICT
+    # the next two could be errors
+    @test MOI.get(
+        solver,
+        MOCS.ConstraintConflictStatus(2),
+        JuMP.index(LowerBoundRef(y)),
+    ) == MOI.NOT_IN_CONFLICT
+    @test MOI.get(
+        solver,
+        MOCS.ConstraintConflictStatus(2),
+        JuMP.index(UpperBoundRef(y)),
+    ) == MOI.NOT_IN_CONFLICT
+    #
+    @test MOI.get(solver, MOCS.ListOfConstraintIndicesInConflict(1)) ==
+          [JuMP.index(LowerBoundRef(y)), JuMP.index(UpperBoundRef(y))]
+    @test isempty(MOI.get(solver, MOCS.ListOfConstraintIndicesInConflict(2)))
     return
 end
 
@@ -42,7 +88,10 @@ function test_integrality()
     @variable(model, 2.2 <= y <= 2.9, Int)
     @constraint(model, x + y <= 1)
     @objective(model, Max, x + y)
-    data = MOCS.compute_conflicts(JuMP.backend(model))
+    solver = MOCS.Optimizer()
+    MOI.set(solver, MOCS.InfeasibleModel(), JuMP.backend(model))
+    MOI.compute_conflict!(solver)
+    data = solver.results
     @test length(data) == 1
     @test data[].constraints == [
         JuMP.index(IntegerRef(y)),
@@ -60,7 +109,10 @@ function test_binary_inner()
     @variable(model, 0 <= y <= 1, Bin)
     @constraint(model, x + y <= 1)
     @objective(model, Max, x + y)
-    data = MOCS.compute_conflicts(JuMP.backend(model))
+    solver = MOCS.Optimizer()
+    MOI.set(solver, MOCS.InfeasibleModel(), JuMP.backend(model))
+    MOI.compute_conflict!(solver)
+    data = solver.results
     @test length(data) == 1
     @test data[].constraints == [
         JuMP.index(BinaryRef(x)),
@@ -78,7 +130,10 @@ function test_binary_lower()
     @variable(model, 0 <= y <= 1, Bin)
     @constraint(model, x + y <= 1)
     @objective(model, Max, x + y)
-    data = MOCS.compute_conflicts(JuMP.backend(model))
+    solver = MOCS.Optimizer()
+    MOI.set(solver, MOCS.InfeasibleModel(), JuMP.backend(model))
+    MOI.compute_conflict!(solver)
+    data = solver.results
     @test length(data) == 1
     @test data[].constraints ==
           [JuMP.index(BinaryRef(x)), JuMP.index(LowerBoundRef(x))]
@@ -93,7 +148,10 @@ function test_binary_upper()
     @variable(model, 0 <= y <= 1, Bin)
     @constraint(model, x + y <= 1)
     @objective(model, Max, x + y)
-    data = MOCS.compute_conflicts(JuMP.backend(model))
+    solver = MOCS.Optimizer()
+    MOI.set(solver, MOCS.InfeasibleModel(), JuMP.backend(model))
+    MOI.compute_conflict!(solver)
+    data = solver.results
     @test length(data) == 1
     @test data[].constraints ==
           [JuMP.index(BinaryRef(x)), JuMP.index(UpperBoundRef(x))]
@@ -112,7 +170,10 @@ function test_range()
     @variable(model, 1 <= y <= 11)
     @constraint(model, c, x + y <= 1)
     @objective(model, Max, x + y)
-    data = MOCS.compute_conflicts(JuMP.backend(model))
+    solver = MOCS.Optimizer()
+    MOI.set(solver, MOCS.InfeasibleModel(), JuMP.backend(model))
+    MOI.compute_conflict!(solver)
+    data = solver.results
     @test length(data) == 1
     @test _isequal_unordered(
         data[].constraints,
@@ -130,6 +191,85 @@ function test_range()
     return
 end
 
+function test_range_and_bound()
+    model = Model()
+    @variable(model, 10 <= x <= 11)
+    @variable(model, 1 <= y <= 11)
+    @variable(model, 1 <= z <= 0)
+    @constraint(model, c, x + y <= 1)
+    @objective(model, Max, x + y)
+    solver = MOCS.Optimizer()
+    MOI.set(solver, MOCS.InfeasibleModel(), JuMP.backend(model))
+    MOI.compute_conflict!(solver)
+    data = solver.results
+    @test length(data) == 1
+    @test _isequal_unordered(
+        data[].constraints,
+        [JuMP.index(LowerBoundRef(z)), JuMP.index(UpperBoundRef(z))],
+    )
+    @test MOI.get(solver, MOCS.StopIfInfeasibleBounds()) == true
+    MOI.set(solver, MOCS.StopIfInfeasibleBounds(), false)
+    @test MOI.get(solver, MOCS.StopIfInfeasibleBounds()) == false
+    MOI.compute_conflict!(solver)
+    data = solver.results
+    @test length(data) == 2
+    @test _isequal_unordered(
+        data[1].constraints,
+        [JuMP.index(LowerBoundRef(z)), JuMP.index(UpperBoundRef(z))],
+    )
+    @test _isequal_unordered(
+        data[2].constraints,
+        [
+            JuMP.index(c),
+            JuMP.index(UpperBoundRef(x)),
+            JuMP.index(LowerBoundRef(x)),
+            JuMP.index(UpperBoundRef(y)),
+            JuMP.index(LowerBoundRef(y)),
+        ],
+    )
+    @test data[2].irreducible
+    @test data[2].metadata ==
+          MOCS.RangeData(11.0, 22.0, MOI.LessThan{Float64}(1.0))
+    @test MOI.get(solver, MOCS.StopIfInfeasibleRanges()) == true
+    MOI.set(solver, MOCS.StopIfInfeasibleRanges(), false)
+    @test MOI.get(solver, MOCS.StopIfInfeasibleRanges()) == false
+    MOI.set(solver, MOCS.InnerOptimizer(), HiGHS.Optimizer)
+    MOI.compute_conflict!(solver)
+    data = solver.results
+    @test length(data) == 2
+    return
+end
+
+function test_range_and_bound_2()
+    model = Model()
+    @variable(model, 10 <= x <= 11)
+    @variable(model, 1 <= y <= 11)
+    @variable(model, 1 <= z <= 0)
+    @constraint(model, c, x + y + z <= 1)
+    @objective(model, Max, x + y)
+    solver = MOCS.Optimizer()
+    MOI.set(solver, MOCS.InfeasibleModel(), JuMP.backend(model))
+    MOI.compute_conflict!(solver)
+    data = solver.results
+    @test length(data) == 1
+    @test _isequal_unordered(
+        data[].constraints,
+        [JuMP.index(LowerBoundRef(z)), JuMP.index(UpperBoundRef(z))],
+    )
+    @test MOI.get(solver, MOCS.StopIfInfeasibleBounds()) == true
+    MOI.set(solver, MOCS.StopIfInfeasibleBounds(), false)
+    @test MOI.get(solver, MOCS.StopIfInfeasibleBounds()) == false
+    MOI.compute_conflict!(solver)
+    data = solver.results
+    # the result is only one conflic again because the range fail cant be computed
+    @test length(data) == 1
+    @test _isequal_unordered(
+        data[1].constraints,
+        [JuMP.index(LowerBoundRef(z)), JuMP.index(UpperBoundRef(z))],
+    )
+    return
+end
+
 function test_range_neg()
     model = Model()
     @variable(model, 10 <= x <= 11)
@@ -137,7 +277,10 @@ function test_range_neg()
     @constraint(model, c, x - y <= 1)
     @objective(model, Max, x + y)
     #
-    data = MOCS.compute_conflicts(JuMP.backend(model))
+    solver = MOCS.Optimizer()
+    MOI.set(solver, MOCS.InfeasibleModel(), JuMP.backend(model))
+    MOI.compute_conflict!(solver)
+    data = solver.results
     @test length(data) == 1
     @test _isequal_unordered(
         data[].constraints,
@@ -161,7 +304,10 @@ function test_range_equalto()
     @variable(model, y == 2)
     @constraint(model, c, x + y == 1)
     @objective(model, Max, x + y)
-    data = MOCS.compute_conflicts(JuMP.backend(model))
+    solver = MOCS.Optimizer()
+    MOI.set(solver, MOCS.InfeasibleModel(), JuMP.backend(model))
+    MOI.compute_conflict!(solver)
+    data = solver.results
     @test length(data) == 1
     @test _isequal_unordered(
         data[].constraints,
@@ -178,7 +324,10 @@ function test_range_equalto_2()
     @variable(model, y == 2)
     @constraint(model, c, 3x + 2y == 1)
     @objective(model, Max, x + y)
-    data = MOCS.compute_conflicts(JuMP.backend(model))
+    solver = MOCS.Optimizer()
+    MOI.set(solver, MOCS.InfeasibleModel(), JuMP.backend(model))
+    MOI.compute_conflict!(solver)
+    data = solver.results
     @test length(data) == 1
     @test _isequal_unordered(
         data[].constraints,
@@ -195,7 +344,10 @@ function test_range_greaterthan()
     @variable(model, 1 <= y <= 11)
     @constraint(model, c, x + y >= 100)
     @objective(model, Max, x + y)
-    data = MOCS.compute_conflicts(JuMP.backend(model))
+    solver = MOCS.Optimizer()
+    MOI.set(solver, MOCS.InfeasibleModel(), JuMP.backend(model))
+    MOI.compute_conflict!(solver)
+    data = solver.results
     @test length(data) == 1
     @test _isequal_unordered(
         data[].constraints,
@@ -219,7 +371,10 @@ function test_range_equalto_3()
     @variable(model, 1 <= y <= 11)
     @constraint(model, c, x + y == 100)
     @objective(model, Max, x + y)
-    data = MOCS.compute_conflicts(JuMP.backend(model))
+    solver = MOCS.Optimizer()
+    MOI.set(solver, MOCS.InfeasibleModel(), JuMP.backend(model))
+    MOI.compute_conflict!(solver)
+    data = solver.results
     @test length(data) == 1
     @test _isequal_unordered(
         data[].constraints,
@@ -245,10 +400,49 @@ function test_interval()
     @constraint(model, c1, x + y <= 1)
     @objective(model, Max, x + y)
     optimize!(model)
-    data =
-        MOCS.compute_conflicts(JuMP.backend(model), optimizer = HiGHS.Optimizer)
+    solver = MOCS.Optimizer()
+    MOI.set(solver, MOCS.InfeasibleModel(), JuMP.backend(model))
+    MOI.set(solver, MOCS.InnerOptimizer(), HiGHS.Optimizer)
+    MOI.compute_conflict!(solver)
+    data = solver.results
+    @test length(data) == 0
+    @test !MOI.get(solver, MOCS.SkipFeasibilityCheck())
+    MOI.set(solver, MOCS.SkipFeasibilityCheck(), true)
+    @test MOI.get(solver, MOCS.SkipFeasibilityCheck())
+    MOI.compute_conflict!(solver)
+    data = solver.results
     @test length(data) == 0
     # TODO check status
+    return
+end
+
+function test_pass_attribute()
+    model = Model(HiGHS.Optimizer)
+    set_silent(model)
+    @variable(model, 0 <= x <= 10)
+    @variable(model, 0 <= y <= 20)
+    @constraint(model, c1, x + y <= 1)
+    @objective(model, Max, x + y)
+    optimize!(model)
+    solver = MOCS.Optimizer()
+    MOI.set(solver, MOCS.InfeasibleModel(), JuMP.backend(model))
+    MOI.set(solver, MOCS.InnerOptimizer(), HiGHS.Optimizer)
+    MOI.set(solver, MOI.TimeLimitSec(), 5.0)
+    @test MOI.get(solver, MOI.TimeLimitSec()) == 5.0
+    @test MOI.get(solver, MOI.Silent()) == false
+    MOI.set(solver, MOI.Silent(), true)
+    @test MOI.get(solver, MOI.Silent()) == true
+    @test MOI.get(solver, MOCS.ElasticFilterTolerance()) == 1e-5
+    MOI.set(solver, MOCS.ElasticFilterTolerance(), 1e-3)
+    @test MOI.get(solver, MOCS.ElasticFilterTolerance()) == 1e-3
+    MOI.compute_conflict!(solver)
+    data = solver.results
+    @test length(data) == 0
+    MOI.set(solver, MOCS.SkipFeasibilityCheck(), true)
+    @test MOI.get(solver, MOCS.SkipFeasibilityCheck())
+    MOI.compute_conflict!(solver)
+    data = solver.results
+    @test length(data) == 0
     return
 end
 
@@ -260,7 +454,10 @@ function test_iis_feasible()
     @constraint(model, c1, x + y <= 1)
     @objective(model, Max, x + y)
     optimize!(model)
-    data = MOCS.compute_conflicts(JuMP.backend(model))
+    solver = MOCS.Optimizer()
+    MOI.set(solver, MOCS.InfeasibleModel(), JuMP.backend(model))
+    MOI.compute_conflict!(solver)
+    data = solver.results
     @test length(data) == 0
     return
 end
@@ -274,10 +471,105 @@ function test_iis()
     @constraint(model, c2, x + y >= 2)
     @objective(model, Max, x + y)
     optimize!(model)
-    data = MOCS.compute_conflicts(JuMP.backend(model))
+    solver = MOCS.Optimizer()
+    MOI.set(solver, MOCS.InfeasibleModel(), JuMP.backend(model))
+    MOI.compute_conflict!(solver)
+    data = solver.results
     @test length(data) == 0
-    data =
-        MOCS.compute_conflicts(JuMP.backend(model), optimizer = HiGHS.Optimizer)
+    solver = MOCS.Optimizer()
+    MOI.set(solver, MOCS.InfeasibleModel(), JuMP.backend(model))
+    MOI.set(solver, MOCS.InnerOptimizer(), HiGHS.Optimizer)
+    MOI.compute_conflict!(solver)
+    data = solver.results
+    @test length(data) == 1
+    @test data[].irreducible
+    @test data[].metadata == MOCS.NoData()
+    @test _isequal_unordered(
+        data[].constraints,
+        [JuMP.index(c2), JuMP.index(c1)],
+    )
+    return
+end
+
+function test_iis_no_deletion_filter()
+    model = Model(HiGHS.Optimizer)
+    set_silent(model)
+    @variable(model, 0 <= x <= 10)
+    @variable(model, 0 <= y <= 20)
+    @constraint(model, c1, x + y <= 1)
+    @constraint(model, c2, x + y >= 2)
+    @objective(model, Max, x + y)
+    optimize!(model)
+    solver = MOCS.Optimizer()
+    MOI.set(solver, MOCS.InfeasibleModel(), JuMP.backend(model))
+    MOI.compute_conflict!(solver)
+    data = solver.results
+    @test length(data) == 0
+    solver = MOCS.Optimizer()
+    MOI.set(solver, MOCS.InfeasibleModel(), JuMP.backend(model))
+    MOI.set(solver, MOCS.InnerOptimizer(), HiGHS.Optimizer)
+    @test MOI.get(solver, MOCS.DeletionFilter()) == true
+    MOI.set(solver, MOCS.DeletionFilter(), false)
+    @test MOI.get(solver, MOCS.DeletionFilter()) == false
+    MOI.compute_conflict!(solver)
+    data = solver.results
+    @test length(data) == 1
+    @test data[].irreducible
+    @test data[].metadata == MOCS.NoData()
+    @test _isequal_unordered(
+        data[].constraints,
+        [JuMP.index(c2), JuMP.index(c1)],
+    )
+    return
+end
+
+function test_iis_ignore_integrality()
+    model = Model(HiGHS.Optimizer)
+    set_silent(model)
+    @variable(model, 0 <= x <= 10)
+    @variable(model, 0 <= y <= 20, Bin)
+    @constraint(model, c1, x + y <= 1)
+    @constraint(model, c2, x + y >= 2)
+    @objective(model, Max, x + y)
+    optimize!(model)
+    solver = MOCS.Optimizer()
+    MOI.set(solver, MOCS.InfeasibleModel(), JuMP.backend(model))
+    MOI.compute_conflict!(solver)
+    data = solver.results
+    @test length(data) == 0
+    solver = MOCS.Optimizer()
+    MOI.set(solver, MOCS.InfeasibleModel(), JuMP.backend(model))
+    MOI.set(solver, MOCS.InnerOptimizer(), HiGHS.Optimizer)
+    @test MOI.get(solver, MOCS.ElasticFilterIgnoreIntegrality()) == false
+    MOI.set(solver, MOCS.ElasticFilterIgnoreIntegrality(), true)
+    @test MOI.get(solver, MOCS.ElasticFilterIgnoreIntegrality()) == true
+    MOI.compute_conflict!(solver)
+    data = solver.results
+    @test length(data) == 1
+    @test data[].irreducible
+    @test data[].metadata == MOCS.NoData()
+    @test _isequal_unordered(
+        data[].constraints,
+        [JuMP.index(c2), JuMP.index(c1)],
+    )
+    return
+end
+
+function test_pass_attribute_inner()
+    model = Model(HiGHS.Optimizer)
+    set_silent(model)
+    @variable(model, 0 <= x <= 10)
+    @variable(model, 0 <= y <= 20)
+    @constraint(model, c1, x + y <= 1)
+    @constraint(model, c2, x + y >= 2)
+    @objective(model, Max, x + y)
+    optimize!(model)
+    solver = MOCS.Optimizer()
+    MOI.set(solver, MOCS.InfeasibleModel(), JuMP.backend(model))
+    MOI.set(solver, MOCS.InnerOptimizer(), HiGHS.Optimizer)
+    MOI.set(solver, MOCS.InnerOptimizerAttribute(MOI.TimeLimitSec()), 10.0)
+    MOI.compute_conflict!(solver)
+    data = solver.results
     @test length(data) == 1
     @test data[].irreducible
     @test data[].metadata == MOCS.NoData()
@@ -297,8 +589,11 @@ function test_iis_free_var()
     @constraint(model, c2, x + y >= 2)
     @objective(model, Max, -2x + y)
     optimize!(model)
-    data =
-        MOCS.compute_conflicts(JuMP.backend(model), optimizer = HiGHS.Optimizer)
+    solver = MOCS.Optimizer()
+    MOI.set(solver, MOCS.InfeasibleModel(), JuMP.backend(model))
+    MOI.set(solver, MOCS.InnerOptimizer(), HiGHS.Optimizer)
+    MOI.compute_conflict!(solver)
+    data = solver.results
     @test length(data) == 1
     @test data[].irreducible
     @test data[].metadata == MOCS.NoData()
@@ -319,8 +614,11 @@ function test_iis_multiple()
     @constraint(model, c2, x + y >= 2)
     @objective(model, Max, x + y)
     optimize!(model)
-    data =
-        MOCS.compute_conflicts(JuMP.backend(model), optimizer = HiGHS.Optimizer)
+    solver = MOCS.Optimizer()
+    MOI.set(solver, MOCS.InfeasibleModel(), JuMP.backend(model))
+    MOI.set(solver, MOCS.InnerOptimizer(), HiGHS.Optimizer)
+    MOI.compute_conflict!(solver)
+    data = solver.results
     @test length(data) == 1
     @test data[].irreducible
     @test data[].metadata == MOCS.NoData()
@@ -340,8 +638,11 @@ function test_iis_interval_right()
     @constraint(model, c2, x + y >= 2)
     @objective(model, Max, x + y)
     optimize!(model)
-    data =
-        MOCS.compute_conflicts(JuMP.backend(model), optimizer = HiGHS.Optimizer)
+    solver = MOCS.Optimizer()
+    MOI.set(solver, MOCS.InfeasibleModel(), JuMP.backend(model))
+    MOI.set(solver, MOCS.InnerOptimizer(), HiGHS.Optimizer)
+    MOI.compute_conflict!(solver)
+    data = solver.results
     @test length(data) == 1
     @test data[].irreducible
     @test data[].metadata == MOCS.NoData()
@@ -361,8 +662,11 @@ function test_iis_interval_left()
     @constraint(model, c2, 2 <= x + y <= 5)
     @objective(model, Max, x + y)
     optimize!(model)
-    data =
-        MOCS.compute_conflicts(JuMP.backend(model), optimizer = HiGHS.Optimizer)
+    solver = MOCS.Optimizer()
+    MOI.set(solver, MOCS.InfeasibleModel(), JuMP.backend(model))
+    MOI.set(solver, MOCS.InnerOptimizer(), HiGHS.Optimizer)
+    MOI.compute_conflict!(solver)
+    data = solver.results
     @test length(data) == 1
     @test data[].irreducible
     @test data[].metadata == MOCS.NoData()
@@ -385,8 +689,11 @@ function test_iis_spare()
     @constraint(model, c2, x + y >= 2)
     @objective(model, Max, x + y)
     optimize!(model)
-    data =
-        MOCS.compute_conflicts(JuMP.backend(model), optimizer = HiGHS.Optimizer)
+    solver = MOCS.Optimizer()
+    MOI.set(solver, MOCS.InfeasibleModel(), JuMP.backend(model))
+    MOI.set(solver, MOCS.InnerOptimizer(), HiGHS.Optimizer)
+    MOI.compute_conflict!(solver)
+    data = solver.results
     @test length(data) == 1
     @test data[].irreducible
     @test data[].metadata == MOCS.NoData()
@@ -394,6 +701,71 @@ function test_iis_spare()
         data[].constraints,
         [JuMP.index(c2), JuMP.index(c1)],
     )
+    @test MOI.get(solver, MOI.ConstraintConflictStatus(), JuMP.index(c0)) ==
+          MOI.NOT_IN_CONFLICT
+    @test MOI.get(solver, MOI.ConstraintConflictStatus(), JuMP.index(c00)) ==
+          MOI.NOT_IN_CONFLICT
+    @test MOI.get(solver, MOI.ConstraintConflictStatus(), JuMP.index(c1)) ==
+          MOI.IN_CONFLICT
+    @test MOI.get(solver, MOI.ConstraintConflictStatus(), JuMP.index(c2)) ==
+          MOI.IN_CONFLICT
+    @test MOI.get(
+        solver,
+        MOI.ConstraintConflictStatus(),
+        JuMP.index(LowerBoundRef(x)),
+    ) == MOI.MAYBE_IN_CONFLICT
+    @test MOI.get(
+        solver,
+        MOI.ConstraintConflictStatus(),
+        JuMP.index(LowerBoundRef(y)),
+    ) == MOI.MAYBE_IN_CONFLICT
+    @test MOI.get(
+        solver,
+        MOI.ConstraintConflictStatus(),
+        JuMP.index(UpperBoundRef(x)),
+    ) == MOI.MAYBE_IN_CONFLICT
+    @test MOI.get(
+        solver,
+        MOI.ConstraintConflictStatus(),
+        JuMP.index(UpperBoundRef(y)),
+    ) == MOI.MAYBE_IN_CONFLICT
+    @test MOI.get(
+        solver,
+        MOI.ConstraintConflictStatus(),
+        JuMP.index(LowerBoundRef(z)),
+    ) == MOI.NOT_IN_CONFLICT
+    @test MOI.get(
+        solver,
+        MOI.ConstraintConflictStatus(),
+        JuMP.index(UpperBoundRef(z)),
+    ) == MOI.NOT_IN_CONFLICT
+    return
+end
+
+function test_iis_binary()
+    model = Model(HiGHS.Optimizer)
+    set_silent(model)
+    @variable(model, x, Bin)
+    @constraint(model, c1, x == 1 / 2)
+    optimize!(model)
+    @show termination_status(model)
+    @show primal_status(model)
+    solver = MOCS.Optimizer()
+    MOI.set(solver, MOCS.InfeasibleModel(), JuMP.backend(model))
+    MOI.set(solver, MOCS.InnerOptimizer(), HiGHS.Optimizer)
+    MOI.compute_conflict!(solver)
+    data = solver.results
+    @test length(data) == 1
+    @test data[].irreducible
+    @test data[].metadata == MOCS.NoData()
+    @test _isequal_unordered(data[].constraints, [JuMP.index(c1)])
+    @test MOI.get(solver, MOI.ConstraintConflictStatus(), JuMP.index(c1)) ==
+          MOI.IN_CONFLICT
+    @test MOI.get(
+        solver,
+        MOI.ConstraintConflictStatus(),
+        JuMP.index(BinaryRef(x)),
+    ) == MOI.MAYBE_IN_CONFLICT
     return
 end
 

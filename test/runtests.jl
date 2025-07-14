@@ -5,7 +5,7 @@
 
 using Test
 
-@testset "ModelAnalyzer" begin
+@testset "MathOptConflictSolver" begin
     for file in readdir(@__DIR__)
         if !endswith(file, ".jl") || file in ("runtests.jl",)
             continue
