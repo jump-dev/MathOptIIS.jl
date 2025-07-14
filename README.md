@@ -3,22 +3,8 @@
 [![Build Status](https://github.com/jump-dev/MathOptIIS.jl/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/jump-dev/MathOptIIS.jl/actions?query=workflow%3ACI)
 [![codecov](https://codecov.io/gh/jump-dev/MathOptIIS.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/jump-dev/MathOptIIS.jl)
 
-[MathOptIIS.jl](https://github.com/jump-dev/MathOptIIS.jl) is a
-basic IIS solver for MathOptInterface.jl.
-
-## IIS
-
-Yes, IIS because it might mean:
-
-1. Irreducible Infeasible Set
-2. Irreducibly Inconsistent Set
-3. Irreducible Infeasible Subsystem
-4. Infeasible Irreducible System
-5. Irreducible Inconsistent Subsystem
-6. Irreducibly Inconsistent System
-7. Minimal Conflict
-
-So, IIS is almost the only consensus.
+[MathOptIIS.jl](https://github.com/jump-dev/MathOptIIS.jl) is a basic IIS solver
+for MathOptInterface.jl.
 
 ## License
 
@@ -38,6 +24,20 @@ Install `MathOptIIS` using `Pkg.add`:
 import Pkg
 Pkg.add(; url = "https://github.com/jump-dev/MathOptIIS.jl")
 ```
+
+## The name
+
+The optimization community consistently uses "IIS", but they have not
+standardized on what the acronym stands for. We have seen:
+
+1. Irreducible Infeasible Set
+2. Irreducibly Inconsistent Set
+3. Irreducible Infeasible Subsystem
+4. Infeasible Irreducible System
+5. Irreducible Inconsistent Subsystem
+6. Irreducibly Inconsistent System
+
+So we choose the name MathOptIIS, and you can decide what the acronym stands for.
 
 ## Documentation
 
