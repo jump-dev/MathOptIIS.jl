@@ -31,54 +31,54 @@ function test_bounds()
     solver = MOIIS.Optimizer()
     @test MOI.get(solver, MOI.ConflictStatus()) ==
           MOI.COMPUTE_CONFLICT_NOT_CALLED
-    MOI.set(solver, MOIIS.InfeasibleModel(), JuMP.backend(model))
+    MOI.set(solver, MOIIS.InfeasibleModel(), backend(model))
     MOI.compute_conflict!(solver)
     data = solver.results
     @test length(data) == 1
     @test data[].constraints ==
-          [JuMP.index(LowerBoundRef(y)), JuMP.index(UpperBoundRef(y))]
+          [index(LowerBoundRef(y)), index(UpperBoundRef(y))]
     @test data[].irreducible
     @test data[].metadata == MOIIS.BoundsData(2.0, 1.0)
     @test MOI.get(solver, MOI.ConflictStatus()) == MOI.CONFLICT_FOUND
-    @test MOI.get(solver, MOI.ConstraintConflictStatus(), JuMP.index(c)) ==
+    @test MOI.get(solver, MOI.ConstraintConflictStatus(), index(c)) ==
           MOI.NOT_IN_CONFLICT
     @test MOI.get(
         solver,
         MOI.ConstraintConflictStatus(),
-        JuMP.index(LowerBoundRef(y)),
+        index(LowerBoundRef(y)),
     ) == MOI.IN_CONFLICT
     @test MOI.get(
         solver,
         MOI.ConstraintConflictStatus(),
-        JuMP.index(UpperBoundRef(y)),
+        index(UpperBoundRef(y)),
     ) == MOI.IN_CONFLICT
     @test MOI.get(solver, MOIIS.ConflictCount()) == 1
     @test MOI.get(
         solver,
         MOIIS.ConstraintConflictStatus(1),
-        JuMP.index(LowerBoundRef(y)),
+        index(LowerBoundRef(y)),
     ) == MOI.IN_CONFLICT
     @test MOI.get(
         solver,
         MOIIS.ConstraintConflictStatus(1),
-        JuMP.index(UpperBoundRef(y)),
+        index(UpperBoundRef(y)),
     ) == MOI.IN_CONFLICT
-    @test MOI.get(solver, MOIIS.ConstraintConflictStatus(1), JuMP.index(c)) ==
+    @test MOI.get(solver, MOIIS.ConstraintConflictStatus(1), index(c)) ==
           MOI.NOT_IN_CONFLICT
     # the next two could be errors
     @test MOI.get(
         solver,
         MOIIS.ConstraintConflictStatus(2),
-        JuMP.index(LowerBoundRef(y)),
+        index(LowerBoundRef(y)),
     ) == MOI.NOT_IN_CONFLICT
     @test MOI.get(
         solver,
         MOIIS.ConstraintConflictStatus(2),
-        JuMP.index(UpperBoundRef(y)),
+        index(UpperBoundRef(y)),
     ) == MOI.NOT_IN_CONFLICT
     #
     @test MOI.get(solver, MOIIS.ListOfConstraintIndicesInConflict(1)) ==
-          [JuMP.index(LowerBoundRef(y)), JuMP.index(UpperBoundRef(y))]
+          [index(LowerBoundRef(y)), index(UpperBoundRef(y))]
     @test isempty(MOI.get(solver, MOIIS.ListOfConstraintIndicesInConflict(2)))
     return
 end
@@ -90,14 +90,14 @@ function test_integrality()
     @constraint(model, x + y <= 1)
     @objective(model, Max, x + y)
     solver = MOIIS.Optimizer()
-    MOI.set(solver, MOIIS.InfeasibleModel(), JuMP.backend(model))
+    MOI.set(solver, MOIIS.InfeasibleModel(), backend(model))
     MOI.compute_conflict!(solver)
     data = solver.results
     @test length(data) == 1
     @test data[].constraints == [
-        JuMP.index(IntegerRef(y)),
-        JuMP.index(LowerBoundRef(y)),
-        JuMP.index(UpperBoundRef(y)),
+        index(IntegerRef(y)),
+        index(LowerBoundRef(y)),
+        index(UpperBoundRef(y)),
     ]
     @test data[].irreducible
     @test data[].metadata == MOIIS.IntegralityData(2.2, 2.9, MOI.Integer())
@@ -111,14 +111,14 @@ function test_binary_inner()
     @constraint(model, x + y <= 1)
     @objective(model, Max, x + y)
     solver = MOIIS.Optimizer()
-    MOI.set(solver, MOIIS.InfeasibleModel(), JuMP.backend(model))
+    MOI.set(solver, MOIIS.InfeasibleModel(), backend(model))
     MOI.compute_conflict!(solver)
     data = solver.results
     @test length(data) == 1
     @test data[].constraints == [
-        JuMP.index(BinaryRef(x)),
-        JuMP.index(LowerBoundRef(x)),
-        JuMP.index(UpperBoundRef(x)),
+        index(BinaryRef(x)),
+        index(LowerBoundRef(x)),
+        index(UpperBoundRef(x)),
     ]
     @test data[].irreducible
     @test data[].metadata == MOIIS.IntegralityData(0.5, 0.8, MOI.ZeroOne())
@@ -132,12 +132,11 @@ function test_binary_lower()
     @constraint(model, x + y <= 1)
     @objective(model, Max, x + y)
     solver = MOIIS.Optimizer()
-    MOI.set(solver, MOIIS.InfeasibleModel(), JuMP.backend(model))
+    MOI.set(solver, MOIIS.InfeasibleModel(), backend(model))
     MOI.compute_conflict!(solver)
     data = solver.results
     @test length(data) == 1
-    @test data[].constraints ==
-          [JuMP.index(BinaryRef(x)), JuMP.index(LowerBoundRef(x))]
+    @test data[].constraints == [index(BinaryRef(x)), index(LowerBoundRef(x))]
     @test data[].irreducible
     @test data[].metadata == MOIIS.IntegralityData(1.5, Inf, MOI.ZeroOne())
     return
@@ -150,12 +149,11 @@ function test_binary_upper()
     @constraint(model, x + y <= 1)
     @objective(model, Max, x + y)
     solver = MOIIS.Optimizer()
-    MOI.set(solver, MOIIS.InfeasibleModel(), JuMP.backend(model))
+    MOI.set(solver, MOIIS.InfeasibleModel(), backend(model))
     MOI.compute_conflict!(solver)
     data = solver.results
     @test length(data) == 1
-    @test data[].constraints ==
-          [JuMP.index(BinaryRef(x)), JuMP.index(UpperBoundRef(x))]
+    @test data[].constraints == [index(BinaryRef(x)), index(UpperBoundRef(x))]
     @test data[].irreducible
     @test data[].metadata == MOIIS.IntegralityData(-Inf, -1.8, MOI.ZeroOne())
     return
@@ -172,18 +170,18 @@ function test_range()
     @constraint(model, c, x + y <= 1)
     @objective(model, Max, x + y)
     solver = MOIIS.Optimizer()
-    MOI.set(solver, MOIIS.InfeasibleModel(), JuMP.backend(model))
+    MOI.set(solver, MOIIS.InfeasibleModel(), backend(model))
     MOI.compute_conflict!(solver)
     data = solver.results
     @test length(data) == 1
     @test _isequal_unordered(
         data[].constraints,
         [
-            JuMP.index(c),
-            JuMP.index(UpperBoundRef(x)),
-            JuMP.index(LowerBoundRef(x)),
-            JuMP.index(UpperBoundRef(y)),
-            JuMP.index(LowerBoundRef(y)),
+            index(c),
+            index(UpperBoundRef(x)),
+            index(LowerBoundRef(x)),
+            index(UpperBoundRef(y)),
+            index(LowerBoundRef(y)),
         ],
     )
     @test data[].irreducible
@@ -200,13 +198,13 @@ function test_range_and_bound()
     @constraint(model, c, x + y <= 1)
     @objective(model, Max, x + y)
     solver = MOIIS.Optimizer()
-    MOI.set(solver, MOIIS.InfeasibleModel(), JuMP.backend(model))
+    MOI.set(solver, MOIIS.InfeasibleModel(), backend(model))
     MOI.compute_conflict!(solver)
     data = solver.results
     @test length(data) == 1
     @test _isequal_unordered(
         data[].constraints,
-        [JuMP.index(LowerBoundRef(z)), JuMP.index(UpperBoundRef(z))],
+        [index(LowerBoundRef(z)), index(UpperBoundRef(z))],
     )
     @test MOI.get(solver, MOIIS.StopIfInfeasibleBounds()) == true
     MOI.set(solver, MOIIS.StopIfInfeasibleBounds(), false)
@@ -216,16 +214,16 @@ function test_range_and_bound()
     @test length(data) == 2
     @test _isequal_unordered(
         data[1].constraints,
-        [JuMP.index(LowerBoundRef(z)), JuMP.index(UpperBoundRef(z))],
+        [index(LowerBoundRef(z)), index(UpperBoundRef(z))],
     )
     @test _isequal_unordered(
         data[2].constraints,
         [
-            JuMP.index(c),
-            JuMP.index(UpperBoundRef(x)),
-            JuMP.index(LowerBoundRef(x)),
-            JuMP.index(UpperBoundRef(y)),
-            JuMP.index(LowerBoundRef(y)),
+            index(c),
+            index(UpperBoundRef(x)),
+            index(LowerBoundRef(x)),
+            index(UpperBoundRef(y)),
+            index(LowerBoundRef(y)),
         ],
     )
     @test data[2].irreducible
@@ -249,13 +247,13 @@ function test_range_and_bound_2()
     @constraint(model, c, x + y + z <= 1)
     @objective(model, Max, x + y)
     solver = MOIIS.Optimizer()
-    MOI.set(solver, MOIIS.InfeasibleModel(), JuMP.backend(model))
+    MOI.set(solver, MOIIS.InfeasibleModel(), backend(model))
     MOI.compute_conflict!(solver)
     data = solver.results
     @test length(data) == 1
     @test _isequal_unordered(
         data[].constraints,
-        [JuMP.index(LowerBoundRef(z)), JuMP.index(UpperBoundRef(z))],
+        [index(LowerBoundRef(z)), index(UpperBoundRef(z))],
     )
     @test MOI.get(solver, MOIIS.StopIfInfeasibleBounds()) == true
     MOI.set(solver, MOIIS.StopIfInfeasibleBounds(), false)
@@ -266,7 +264,7 @@ function test_range_and_bound_2()
     @test length(data) == 1
     @test _isequal_unordered(
         data[1].constraints,
-        [JuMP.index(LowerBoundRef(z)), JuMP.index(UpperBoundRef(z))],
+        [index(LowerBoundRef(z)), index(UpperBoundRef(z))],
     )
     return
 end
@@ -279,18 +277,18 @@ function test_range_neg()
     @objective(model, Max, x + y)
     #
     solver = MOIIS.Optimizer()
-    MOI.set(solver, MOIIS.InfeasibleModel(), JuMP.backend(model))
+    MOI.set(solver, MOIIS.InfeasibleModel(), backend(model))
     MOI.compute_conflict!(solver)
     data = solver.results
     @test length(data) == 1
     @test _isequal_unordered(
         data[].constraints,
         [
-            JuMP.index(c),
-            JuMP.index(UpperBoundRef(x)),
-            JuMP.index(LowerBoundRef(x)),
-            JuMP.index(UpperBoundRef(y)),
-            JuMP.index(LowerBoundRef(y)),
+            index(c),
+            index(UpperBoundRef(x)),
+            index(LowerBoundRef(x)),
+            index(UpperBoundRef(y)),
+            index(LowerBoundRef(y)),
         ],
     )
     @test data[].irreducible
@@ -306,13 +304,13 @@ function test_range_equalto()
     @constraint(model, c, x + y == 1)
     @objective(model, Max, x + y)
     solver = MOIIS.Optimizer()
-    MOI.set(solver, MOIIS.InfeasibleModel(), JuMP.backend(model))
+    MOI.set(solver, MOIIS.InfeasibleModel(), backend(model))
     MOI.compute_conflict!(solver)
     data = solver.results
     @test length(data) == 1
     @test _isequal_unordered(
         data[].constraints,
-        [JuMP.index(c), JuMP.index(FixRef(x)), JuMP.index(FixRef(y))],
+        [index(c), index(FixRef(x)), index(FixRef(y))],
     )
     @test data[].irreducible
     @test data[].metadata ==
@@ -327,13 +325,13 @@ function test_range_equalto_2()
     @constraint(model, c, 3x + 2y == 1)
     @objective(model, Max, x + y)
     solver = MOIIS.Optimizer()
-    MOI.set(solver, MOIIS.InfeasibleModel(), JuMP.backend(model))
+    MOI.set(solver, MOIIS.InfeasibleModel(), backend(model))
     MOI.compute_conflict!(solver)
     data = solver.results
     @test length(data) == 1
     @test _isequal_unordered(
         data[].constraints,
-        [JuMP.index(c), JuMP.index(FixRef(x)), JuMP.index(FixRef(y))],
+        [index(c), index(FixRef(x)), index(FixRef(y))],
     )
     @test data[].irreducible
     @test data[].metadata ==
@@ -348,18 +346,18 @@ function test_range_greaterthan()
     @constraint(model, c, x + y >= 100)
     @objective(model, Max, x + y)
     solver = MOIIS.Optimizer()
-    MOI.set(solver, MOIIS.InfeasibleModel(), JuMP.backend(model))
+    MOI.set(solver, MOIIS.InfeasibleModel(), backend(model))
     MOI.compute_conflict!(solver)
     data = solver.results
     @test length(data) == 1
     @test _isequal_unordered(
         data[].constraints,
         [
-            JuMP.index(c),
-            JuMP.index(UpperBoundRef(x)),
-            JuMP.index(LowerBoundRef(x)),
-            JuMP.index(UpperBoundRef(y)),
-            JuMP.index(LowerBoundRef(y)),
+            index(c),
+            index(UpperBoundRef(x)),
+            index(LowerBoundRef(x)),
+            index(UpperBoundRef(y)),
+            index(LowerBoundRef(y)),
         ],
     )
     @test data[].irreducible
@@ -375,18 +373,18 @@ function test_range_equalto_3()
     @constraint(model, c, x + y == 100)
     @objective(model, Max, x + y)
     solver = MOIIS.Optimizer()
-    MOI.set(solver, MOIIS.InfeasibleModel(), JuMP.backend(model))
+    MOI.set(solver, MOIIS.InfeasibleModel(), backend(model))
     MOI.compute_conflict!(solver)
     data = solver.results
     @test length(data) == 1
     @test _isequal_unordered(
         data[].constraints,
         [
-            JuMP.index(c),
-            JuMP.index(UpperBoundRef(x)),
-            JuMP.index(LowerBoundRef(x)),
-            JuMP.index(UpperBoundRef(y)),
-            JuMP.index(LowerBoundRef(y)),
+            index(c),
+            index(UpperBoundRef(x)),
+            index(LowerBoundRef(x)),
+            index(UpperBoundRef(y)),
+            index(LowerBoundRef(y)),
         ],
     )
     @test data[].irreducible
@@ -404,7 +402,7 @@ function test_interval()
     @objective(model, Max, x + y)
     optimize!(model)
     solver = MOIIS.Optimizer()
-    MOI.set(solver, MOIIS.InfeasibleModel(), JuMP.backend(model))
+    MOI.set(solver, MOIIS.InfeasibleModel(), backend(model))
     MOI.set(solver, MOIIS.InnerOptimizer(), HiGHS.Optimizer)
     MOI.compute_conflict!(solver)
     data = solver.results
@@ -428,7 +426,7 @@ function test_pass_attribute()
     @objective(model, Max, x + y)
     optimize!(model)
     solver = MOIIS.Optimizer()
-    MOI.set(solver, MOIIS.InfeasibleModel(), JuMP.backend(model))
+    MOI.set(solver, MOIIS.InfeasibleModel(), backend(model))
     MOI.set(solver, MOIIS.InnerOptimizer(), HiGHS.Optimizer)
     MOI.set(solver, MOI.TimeLimitSec(), 5.0)
     @test MOI.get(solver, MOI.TimeLimitSec()) == 5.0
@@ -458,7 +456,7 @@ function test_iis_feasible()
     @objective(model, Max, x + y)
     optimize!(model)
     solver = MOIIS.Optimizer()
-    MOI.set(solver, MOIIS.InfeasibleModel(), JuMP.backend(model))
+    MOI.set(solver, MOIIS.InfeasibleModel(), backend(model))
     MOI.compute_conflict!(solver)
     data = solver.results
     @test length(data) == 0
@@ -475,22 +473,19 @@ function test_iis()
     @objective(model, Max, x + y)
     optimize!(model)
     solver = MOIIS.Optimizer()
-    MOI.set(solver, MOIIS.InfeasibleModel(), JuMP.backend(model))
+    MOI.set(solver, MOIIS.InfeasibleModel(), backend(model))
     MOI.compute_conflict!(solver)
     data = solver.results
     @test length(data) == 0
     solver = MOIIS.Optimizer()
-    MOI.set(solver, MOIIS.InfeasibleModel(), JuMP.backend(model))
+    MOI.set(solver, MOIIS.InfeasibleModel(), backend(model))
     MOI.set(solver, MOIIS.InnerOptimizer(), HiGHS.Optimizer)
     MOI.compute_conflict!(solver)
     data = solver.results
     @test length(data) == 1
     @test data[].irreducible
     @test data[].metadata == MOIIS.NoData()
-    @test _isequal_unordered(
-        data[].constraints,
-        [JuMP.index(c2), JuMP.index(c1)],
-    )
+    @test _isequal_unordered(data[].constraints, [index(c2), index(c1)])
     return
 end
 
@@ -504,12 +499,12 @@ function test_iis_no_deletion_filter()
     @objective(model, Max, x + y)
     optimize!(model)
     solver = MOIIS.Optimizer()
-    MOI.set(solver, MOIIS.InfeasibleModel(), JuMP.backend(model))
+    MOI.set(solver, MOIIS.InfeasibleModel(), backend(model))
     MOI.compute_conflict!(solver)
     data = solver.results
     @test length(data) == 0
     solver = MOIIS.Optimizer()
-    MOI.set(solver, MOIIS.InfeasibleModel(), JuMP.backend(model))
+    MOI.set(solver, MOIIS.InfeasibleModel(), backend(model))
     MOI.set(solver, MOIIS.InnerOptimizer(), HiGHS.Optimizer)
     @test MOI.get(solver, MOIIS.DeletionFilter()) == true
     MOI.set(solver, MOIIS.DeletionFilter(), false)
@@ -519,10 +514,7 @@ function test_iis_no_deletion_filter()
     @test length(data) == 1
     @test data[].irreducible
     @test data[].metadata == MOIIS.NoData()
-    @test _isequal_unordered(
-        data[].constraints,
-        [JuMP.index(c2), JuMP.index(c1)],
-    )
+    @test _isequal_unordered(data[].constraints, [index(c2), index(c1)])
     return
 end
 
@@ -536,12 +528,12 @@ function test_iis_ignore_integrality()
     @objective(model, Max, x + y)
     optimize!(model)
     solver = MOIIS.Optimizer()
-    MOI.set(solver, MOIIS.InfeasibleModel(), JuMP.backend(model))
+    MOI.set(solver, MOIIS.InfeasibleModel(), backend(model))
     MOI.compute_conflict!(solver)
     data = solver.results
     @test length(data) == 0
     solver = MOIIS.Optimizer()
-    MOI.set(solver, MOIIS.InfeasibleModel(), JuMP.backend(model))
+    MOI.set(solver, MOIIS.InfeasibleModel(), backend(model))
     MOI.set(solver, MOIIS.InnerOptimizer(), HiGHS.Optimizer)
     @test MOI.get(solver, MOIIS.ElasticFilterIgnoreIntegrality()) == false
     MOI.set(solver, MOIIS.ElasticFilterIgnoreIntegrality(), true)
@@ -551,10 +543,7 @@ function test_iis_ignore_integrality()
     @test length(data) == 1
     @test data[].irreducible
     @test data[].metadata == MOIIS.NoData()
-    @test _isequal_unordered(
-        data[].constraints,
-        [JuMP.index(c2), JuMP.index(c1)],
-    )
+    @test _isequal_unordered(data[].constraints, [index(c2), index(c1)])
     return
 end
 
@@ -568,7 +557,7 @@ function test_pass_attribute_inner()
     @objective(model, Max, x + y)
     optimize!(model)
     solver = MOIIS.Optimizer()
-    MOI.set(solver, MOIIS.InfeasibleModel(), JuMP.backend(model))
+    MOI.set(solver, MOIIS.InfeasibleModel(), backend(model))
     MOI.set(solver, MOIIS.InnerOptimizer(), HiGHS.Optimizer)
     MOI.set(solver, MOIIS.InnerOptimizerAttribute(MOI.TimeLimitSec()), 10.0)
     MOI.compute_conflict!(solver)
@@ -576,10 +565,7 @@ function test_pass_attribute_inner()
     @test length(data) == 1
     @test data[].irreducible
     @test data[].metadata == MOIIS.NoData()
-    @test _isequal_unordered(
-        data[].constraints,
-        [JuMP.index(c2), JuMP.index(c1)],
-    )
+    @test _isequal_unordered(data[].constraints, [index(c2), index(c1)])
     return
 end
 
@@ -593,17 +579,14 @@ function test_iis_free_var()
     @objective(model, Max, -2x + y)
     optimize!(model)
     solver = MOIIS.Optimizer()
-    MOI.set(solver, MOIIS.InfeasibleModel(), JuMP.backend(model))
+    MOI.set(solver, MOIIS.InfeasibleModel(), backend(model))
     MOI.set(solver, MOIIS.InnerOptimizer(), HiGHS.Optimizer)
     MOI.compute_conflict!(solver)
     data = solver.results
     @test length(data) == 1
     @test data[].irreducible
     @test data[].metadata == MOIIS.NoData()
-    @test _isequal_unordered(
-        data[].constraints,
-        [JuMP.index(c2), JuMP.index(c1)],
-    )
+    @test _isequal_unordered(data[].constraints, [index(c2), index(c1)])
     return
 end
 
@@ -618,7 +601,7 @@ function test_iis_multiple()
     @objective(model, Max, x + y)
     optimize!(model)
     solver = MOIIS.Optimizer()
-    MOI.set(solver, MOIIS.InfeasibleModel(), JuMP.backend(model))
+    MOI.set(solver, MOIIS.InfeasibleModel(), backend(model))
     MOI.set(solver, MOIIS.InnerOptimizer(), HiGHS.Optimizer)
     MOI.compute_conflict!(solver)
     data = solver.results
@@ -627,8 +610,8 @@ function test_iis_multiple()
     @test data[].metadata == MOIIS.NoData()
     iis = data[].constraints
     @test length(iis) == 2
-    @test Set(iis) ⊆ Set([JuMP.index(c3), JuMP.index(c2), JuMP.index(c1)])
-    @test JuMP.index(c2) in Set(iis)
+    @test Set(iis) ⊆ Set([index(c3), index(c2), index(c1)])
+    @test index(c2) in Set(iis)
     return
 end
 
@@ -642,17 +625,14 @@ function test_iis_interval_right()
     @objective(model, Max, x + y)
     optimize!(model)
     solver = MOIIS.Optimizer()
-    MOI.set(solver, MOIIS.InfeasibleModel(), JuMP.backend(model))
+    MOI.set(solver, MOIIS.InfeasibleModel(), backend(model))
     MOI.set(solver, MOIIS.InnerOptimizer(), HiGHS.Optimizer)
     MOI.compute_conflict!(solver)
     data = solver.results
     @test length(data) == 1
     @test data[].irreducible
     @test data[].metadata == MOIIS.NoData()
-    @test _isequal_unordered(
-        data[].constraints,
-        [JuMP.index(c2), JuMP.index(c1)],
-    )
+    @test _isequal_unordered(data[].constraints, [index(c2), index(c1)])
     return
 end
 
@@ -666,17 +646,14 @@ function test_iis_interval_left()
     @objective(model, Max, x + y)
     optimize!(model)
     solver = MOIIS.Optimizer()
-    MOI.set(solver, MOIIS.InfeasibleModel(), JuMP.backend(model))
+    MOI.set(solver, MOIIS.InfeasibleModel(), backend(model))
     MOI.set(solver, MOIIS.InnerOptimizer(), HiGHS.Optimizer)
     MOI.compute_conflict!(solver)
     data = solver.results
     @test length(data) == 1
     @test data[].irreducible
     @test data[].metadata == MOIIS.NoData()
-    @test _isequal_unordered(
-        data[].constraints,
-        [JuMP.index(c2), JuMP.index(c1)],
-    )
+    @test _isequal_unordered(data[].constraints, [index(c2), index(c1)])
     return
 end
 
@@ -693,54 +670,51 @@ function test_iis_spare()
     @objective(model, Max, x + y)
     optimize!(model)
     solver = MOIIS.Optimizer()
-    MOI.set(solver, MOIIS.InfeasibleModel(), JuMP.backend(model))
+    MOI.set(solver, MOIIS.InfeasibleModel(), backend(model))
     MOI.set(solver, MOIIS.InnerOptimizer(), HiGHS.Optimizer)
     MOI.compute_conflict!(solver)
     data = solver.results
     @test length(data) == 1
     @test data[].irreducible
     @test data[].metadata == MOIIS.NoData()
-    @test _isequal_unordered(
-        data[].constraints,
-        [JuMP.index(c2), JuMP.index(c1)],
-    )
-    @test MOI.get(solver, MOI.ConstraintConflictStatus(), JuMP.index(c0)) ==
+    @test _isequal_unordered(data[].constraints, [index(c2), index(c1)])
+    @test MOI.get(solver, MOI.ConstraintConflictStatus(), index(c0)) ==
           MOI.NOT_IN_CONFLICT
-    @test MOI.get(solver, MOI.ConstraintConflictStatus(), JuMP.index(c00)) ==
+    @test MOI.get(solver, MOI.ConstraintConflictStatus(), index(c00)) ==
           MOI.NOT_IN_CONFLICT
-    @test MOI.get(solver, MOI.ConstraintConflictStatus(), JuMP.index(c1)) ==
+    @test MOI.get(solver, MOI.ConstraintConflictStatus(), index(c1)) ==
           MOI.IN_CONFLICT
-    @test MOI.get(solver, MOI.ConstraintConflictStatus(), JuMP.index(c2)) ==
+    @test MOI.get(solver, MOI.ConstraintConflictStatus(), index(c2)) ==
           MOI.IN_CONFLICT
     @test MOI.get(
         solver,
         MOI.ConstraintConflictStatus(),
-        JuMP.index(LowerBoundRef(x)),
+        index(LowerBoundRef(x)),
     ) == MOI.MAYBE_IN_CONFLICT
     @test MOI.get(
         solver,
         MOI.ConstraintConflictStatus(),
-        JuMP.index(LowerBoundRef(y)),
+        index(LowerBoundRef(y)),
     ) == MOI.MAYBE_IN_CONFLICT
     @test MOI.get(
         solver,
         MOI.ConstraintConflictStatus(),
-        JuMP.index(UpperBoundRef(x)),
+        index(UpperBoundRef(x)),
     ) == MOI.MAYBE_IN_CONFLICT
     @test MOI.get(
         solver,
         MOI.ConstraintConflictStatus(),
-        JuMP.index(UpperBoundRef(y)),
+        index(UpperBoundRef(y)),
     ) == MOI.MAYBE_IN_CONFLICT
     @test MOI.get(
         solver,
         MOI.ConstraintConflictStatus(),
-        JuMP.index(LowerBoundRef(z)),
+        index(LowerBoundRef(z)),
     ) == MOI.NOT_IN_CONFLICT
     @test MOI.get(
         solver,
         MOI.ConstraintConflictStatus(),
-        JuMP.index(UpperBoundRef(z)),
+        index(UpperBoundRef(z)),
     ) == MOI.NOT_IN_CONFLICT
     return
 end
@@ -754,20 +728,20 @@ function test_iis_binary()
     @show termination_status(model)
     @show primal_status(model)
     solver = MOIIS.Optimizer()
-    MOI.set(solver, MOIIS.InfeasibleModel(), JuMP.backend(model))
+    MOI.set(solver, MOIIS.InfeasibleModel(), backend(model))
     MOI.set(solver, MOIIS.InnerOptimizer(), HiGHS.Optimizer)
     MOI.compute_conflict!(solver)
     data = solver.results
     @test length(data) == 1
     @test data[].irreducible
     @test data[].metadata == MOIIS.NoData()
-    @test _isequal_unordered(data[].constraints, [JuMP.index(c1)])
-    @test MOI.get(solver, MOI.ConstraintConflictStatus(), JuMP.index(c1)) ==
+    @test _isequal_unordered(data[].constraints, [index(c1)])
+    @test MOI.get(solver, MOI.ConstraintConflictStatus(), index(c1)) ==
           MOI.IN_CONFLICT
     @test MOI.get(
         solver,
         MOI.ConstraintConflictStatus(),
-        JuMP.index(BinaryRef(x)),
+        index(BinaryRef(x)),
     ) == MOI.MAYBE_IN_CONFLICT
     return
 end
