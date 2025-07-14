@@ -3,7 +3,7 @@
 # Use of this source code is governed by an MIT-style license that can be found
 # in the LICENSE.md file or at https://opensource.org/licenses/MIT.
 
-module MathOptConflictSolver
+module MathOptIIS
 
 import MathOptInterface as MOI
 
@@ -12,4 +12,4 @@ include("bound.jl")
 include("range.jl")
 include("solver.jl")
 
-end # module MathOptConflictSolver
+end # module MathOptIIS

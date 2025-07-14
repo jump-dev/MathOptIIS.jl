@@ -1,10 +1,10 @@
 ```@meta
-CurrentModule = MathOptConflictSolver
+CurrentModule = MathOptIIS
 DocTestSetup = quote
-    using MathOptConflictSolver
+    using MathOptIIS
 end
 ```
 
-# MathOptConflictSolver.jl
+# MathOptIIS.jl
 
 This package is a basic conflict solver for MathOptInterface.jl.

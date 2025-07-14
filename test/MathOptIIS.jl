@@ -3,9 +3,9 @@
 # Use of this source code is governed by an MIT-style license that can be found
 # in the LICENSE.md file or at https://opensource.org/licenses/MIT.
 
-module TestMathOptConflictSolver
+module TestMathOptIIS
 
-import MathOptConflictSolver
+import MathOptIIS
 import MathOptInterface as MOI
 using Test
 using JuMP
@@ -26,6 +26,6 @@ function test_1()
     return
 end
 
-end # module TestMathOptConflictSolver
+end # module TestMathOptIIS
 
-TestMathOptConflictSolver.runtests()
+TestMathOptIIS.runtests()
