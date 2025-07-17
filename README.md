@@ -22,7 +22,7 @@ Install `MathOptIIS` using `Pkg.add`:
 
 ```julia
 import Pkg
-Pkg.add(; url = "https://github.com/jump-dev/MathOptIIS.jl")
+Pkg.add("MathOptIIS")
 ```
 
 ## The name
@@ -41,5 +41,5 @@ So we choose the name MathOptIIS, and you can decide what the acronym stands for
 
 ## Documentation
 
-The [documentation for MathOptIIS.jl](https://jump.dev/MathOptIIS.jl/dev/)
+The [documentation for MathOptIIS.jl](https://jump.dev/MathOptIIS.jl/stable/)
 describes how to use the package.
