@@ -62,8 +62,10 @@ function _elastic_filter(optimizer::Optimizer)
     base_obj_type = MOI.get(model, MOI.ObjectiveFunctionType())
     base_obj_func = MOI.get(model, MOI.ObjectiveFunction{base_obj_type}())
 
-    constraint_to_affine =
-        MOI.modify(model, MOI.Utilities.PenaltyRelaxation(default = one(T)))
+    constraint_to_affine = MOI.modify(
+        model,
+        MOI.Utilities.PenaltyRelaxation(; default = one(T), warn = false),
+    )
     # all slack variables added are of type ">= 0"
     # might need to do something related to integers / binary
     relaxed_obj_type = MOI.get(model, MOI.ObjectiveFunctionType())
