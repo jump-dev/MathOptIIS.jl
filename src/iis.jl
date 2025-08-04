@@ -346,7 +346,7 @@ function MOI.compute_conflict!(optimizer::Optimizer)
             InfeasibilityData(
                 iis,
                 true,
-                NoData(),
+                NoData();
                 maybe_constraints = maybe_constraints,
             ),
         )
