@@ -1,6 +1,6 @@
 name = "MathOptIIS"
 uuid = "8c4f8055-bd93-4160-a86b-a0c04941dbff"
-version = "0.1.0"
+version = "0.1.1"
 
 [deps]
 MathOptInterface = "b8f27783-ece8-5eb3-8dc8-9495eed66fee"
