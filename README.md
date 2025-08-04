@@ -25,6 +25,43 @@ import Pkg
 Pkg.add("MathOptIIS")
 ```
 
+## Usage
+
+This package is not intended to be called directly from user-code. Instead, it
+should be added as a dependency to solver wrappers that want to provide an IIS.
+
+To add to an existing wrapper, add a new field:
+```julia
+conflict_solver::Union{Nothing,MathOptIIS.Optimizer}
+```
+
+Then, add the following methods:
+```julia
+function MOI.compute_conflict!(model::Optimizer)
+    solver = MathOptIIS.Optimizer()
+    MOI.set(solver, MathOptIIS.InfeasibleModel(), model)
+    MOI.set(solver, MathOptIIS.InnerOptimizer(), Optimizer)
+    MOI.compute_conflict!(solver)
+    model.conflict_solver = solver
+    return
+end
+
+function MOI.get(optimizer::Optimizer, attr::MOI.ConflictStatus)
+    if optimizer.conflict_solver === nothing
+        return MOI.COMPUTE_CONFLICT_NOT_CALLED
+    end
+    return MOI.get(optimizer.conflict_solver, attr)
+end
+
+function MOI.get(
+    optimizer::Optimizer,
+    attr::MOI.ConstraintConflictStatus,
+    con::MOI.ConstraintIndex,
+)
+    return MOI.get(optimizer.conflict_solver, attr, con)
+end
+```
+
 ## The name
 
 The optimization community consistently uses "IIS", but they have not
@@ -38,8 +75,3 @@ standardized on what the acronym stands for. We have seen:
 6. Irreducibly Inconsistent System
 
 So we choose the name MathOptIIS, and you can decide what the acronym stands for.
-
-## Documentation
-
-The [documentation for MathOptIIS.jl](https://jump.dev/MathOptIIS.jl/stable/)
-describes how to use the package.
