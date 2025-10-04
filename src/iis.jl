@@ -71,7 +71,7 @@ struct InfeasibleModel end
 
 function MOI.set(
     optimizer::Optimizer,
-    attr::InfeasibleModel,
+    ::InfeasibleModel,
     model::MOI.ModelLike,
 )
     optimizer.original_model = model
@@ -81,18 +81,18 @@ function MOI.set(
     return
 end
 
-# function MOI.get(optimizer::Optimizer, attr::InfeasibleModel)
+# function MOI.get(optimizer::Optimizer, ::InfeasibleModel)
 #     return optimizer.original_model
 # end
 
 struct InnerOptimizer end
 
-function MOI.set(optimizer::Optimizer, attr::InnerOptimizer, solver)
+function MOI.set(optimizer::Optimizer, ::InnerOptimizer, solver)
     optimizer.optimizer = solver
     return
 end
 
-# function MOI.get(optimizer::Optimizer, attr::InnerOptimizer)
+# function MOI.get(optimizer::Optimizer, ::InnerOptimizer)
 #     return optimizer.optimizer
 # end
 
@@ -112,32 +112,32 @@ end
 #     return optimizer.optimizer_attributes[attr.attr]
 # end
 
-function MOI.set(optimizer::Optimizer, attr::MOI.TimeLimitSec, value::Float64)
+function MOI.set(optimizer::Optimizer, ::MOI.TimeLimitSec, value::Float64)
     optimizer.time_limit = value
     return
 end
 
-function MOI.get(optimizer::Optimizer, attr::MOI.TimeLimitSec)
+function MOI.get(optimizer::Optimizer, ::MOI.TimeLimitSec)
     return optimizer.time_limit
 end
 
-function MOI.set(optimizer::Optimizer, attr::MOI.Silent, value::Bool)
+function MOI.set(optimizer::Optimizer, ::MOI.Silent, value::Bool)
     optimizer.verbose = value
     return
 end
 
-function MOI.get(optimizer::Optimizer, attr::MOI.Silent)
+function MOI.get(optimizer::Optimizer, ::MOI.Silent)
     return optimizer.verbose
 end
 
 struct SkipFeasibilityCheck <: MOI.AbstractOptimizerAttribute end
 
-function MOI.set(optimizer::Optimizer, attr::SkipFeasibilityCheck, value::Bool)
+function MOI.set(optimizer::Optimizer, ::SkipFeasibilityCheck, value::Bool)
     optimizer.skip_feasibility_check = value
     return
 end
 
-function MOI.get(optimizer::Optimizer, attr::SkipFeasibilityCheck)
+function MOI.get(optimizer::Optimizer, ::SkipFeasibilityCheck)
     return optimizer.skip_feasibility_check
 end
 
@@ -145,14 +145,14 @@ struct StopIfInfeasibleBounds end
 
 function MOI.set(
     optimizer::Optimizer,
-    attr::StopIfInfeasibleBounds,
+    ::StopIfInfeasibleBounds,
     value::Bool,
 )
     optimizer.stop_if_infeasible_bounds = value
     return
 end
 
-function MOI.get(optimizer::Optimizer, attr::StopIfInfeasibleBounds)
+function MOI.get(optimizer::Optimizer, ::StopIfInfeasibleBounds)
     return optimizer.stop_if_infeasible_bounds
 end
 
@@ -160,25 +160,25 @@ struct StopIfInfeasibleRanges end
 
 function MOI.set(
     optimizer::Optimizer,
-    attr::StopIfInfeasibleRanges,
+    ::StopIfInfeasibleRanges,
     value::Bool,
 )
     optimizer.stop_if_infeasible_ranges = value
     return
 end
 
-function MOI.get(optimizer::Optimizer, attr::StopIfInfeasibleRanges)
+function MOI.get(optimizer::Optimizer, ::StopIfInfeasibleRanges)
     return optimizer.stop_if_infeasible_ranges
 end
 
 struct DeletionFilter end
 
-function MOI.set(optimizer::Optimizer, attr::DeletionFilter, value::Bool)
+function MOI.set(optimizer::Optimizer, ::DeletionFilter, value::Bool)
     optimizer.deletion_filter = value
     return
 end
 
-function MOI.get(optimizer::Optimizer, attr::DeletionFilter)
+function MOI.get(optimizer::Optimizer, ::DeletionFilter)
     return optimizer.deletion_filter
 end
 
@@ -208,13 +208,13 @@ function MOI.get(optimizer::Optimizer, ::ElasticFilterIgnoreIntegrality)
     return optimizer.ignore_integrality
 end
 
-function MOI.get(optimizer::Optimizer, attr::MOI.ConflictStatus)
+function MOI.get(optimizer::Optimizer, ::MOI.ConflictStatus)
     return optimizer.status
 end
 
 function MOI.get(
     optimizer::Optimizer,
-    attr::MOI.ConstraintConflictStatus,
+    ::MOI.ConstraintConflictStatus,
     con::MOI.ConstraintIndex,
 )
     return MOI.get(optimizer, ConstraintConflictStatus(1), con)
@@ -223,7 +223,7 @@ end
 # this should be moved to MOI
 struct ConflictCount <: MOI.AbstractModelAttribute end
 
-function MOI.get(optimizer::Optimizer, attr::ConflictCount)
+function MOI.get(optimizer::Optimizer, ::ConflictCount)
     return length(optimizer.results)
 end
 
