@@ -76,8 +76,8 @@ function MOI.set(
 )
     optimizer.original_model = model
     # this also resets the results
-    results = InfeasibilityData[]
-    status = MOI.COMPUTE_CONFLICT_NOT_CALLED
+    optimizer.results = InfeasibilityData[]
+    optimizer.status = MOI.COMPUTE_CONFLICT_NOT_CALLED
     return
 end
 
