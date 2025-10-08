@@ -69,11 +69,7 @@ end
 
 struct InfeasibleModel end
 
-function MOI.set(
-    optimizer::Optimizer,
-    ::InfeasibleModel,
-    model::MOI.ModelLike,
-)
+function MOI.set(optimizer::Optimizer, ::InfeasibleModel, model::MOI.ModelLike)
     optimizer.original_model = model
     # this also resets the results
     results = InfeasibilityData[]
@@ -143,11 +139,7 @@ end
 
 struct StopIfInfeasibleBounds end
 
-function MOI.set(
-    optimizer::Optimizer,
-    ::StopIfInfeasibleBounds,
-    value::Bool,
-)
+function MOI.set(optimizer::Optimizer, ::StopIfInfeasibleBounds, value::Bool)
     optimizer.stop_if_infeasible_bounds = value
     return
 end
@@ -158,11 +150,7 @@ end
 
 struct StopIfInfeasibleRanges end
 
-function MOI.set(
-    optimizer::Optimizer,
-    ::StopIfInfeasibleRanges,
-    value::Bool,
-)
+function MOI.set(optimizer::Optimizer, ::StopIfInfeasibleRanges, value::Bool)
     optimizer.stop_if_infeasible_ranges = value
     return
 end
