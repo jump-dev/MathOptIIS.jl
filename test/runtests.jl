@@ -486,6 +486,9 @@ function test_iis()
     @test data[].irreducible
     @test data[].metadata == MOIIS.NoData()
     @test _isequal_unordered(data[].constraints, [index(c2), index(c1)])
+    MOI.set(solver, MOIIS.InfeasibleModel(), backend(model))
+    @test isempty(solver.results)
+    @test solver.status == MOI.COMPUTE_CONFLICT_NOT_CALLED
     return
 end
 
