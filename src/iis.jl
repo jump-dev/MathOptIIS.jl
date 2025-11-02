@@ -118,12 +118,12 @@ function MOI.get(optimizer::Optimizer, ::MOI.TimeLimitSec)
 end
 
 function MOI.set(optimizer::Optimizer, ::MOI.Silent, value::Bool)
-    optimizer.verbose = value
+    optimizer.verbose = !value
     return
 end
 
 function MOI.get(optimizer::Optimizer, ::MOI.Silent)
-    return optimizer.verbose
+    return !optimizer.verbose
 end
 
 struct SkipFeasibilityCheck <: MOI.AbstractOptimizerAttribute end
