@@ -200,30 +200,13 @@ function MOI.get(optimizer::Optimizer, ::MOI.ConflictStatus)
     return optimizer.status
 end
 
-function MOI.get(
-    optimizer::Optimizer,
-    ::MOI.ConstraintConflictStatus,
-    con::MOI.ConstraintIndex,
-)
-    return MOI.get(optimizer, ConstraintConflictStatus(1), con)
-end
-
-# this should be moved to MOI
-struct ConflictCount <: MOI.AbstractModelAttribute end
-
-function MOI.get(optimizer::Optimizer, ::ConflictCount)
+function MOI.get(optimizer::Optimizer, ::MOI.ConflictCount)
     return length(optimizer.results)
 end
 
-# the MOI version must be generalized
-struct ConstraintConflictStatus <: MOI.AbstractModelAttribute
-    conflict_index::Int
-    ConstraintConflictStatus(conflict_index = 1) = new(conflict_index)
-end
-
 function MOI.get(
     optimizer::Optimizer,
-    attr::ConstraintConflictStatus,
+    attr::MOI.ConstraintConflictStatus,
     con::MOI.ConstraintIndex,
 )
     if attr.conflict_index > length(optimizer.results)
