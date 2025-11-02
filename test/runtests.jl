@@ -52,28 +52,28 @@ function test_bounds()
         MOI.ConstraintConflictStatus(),
         index(UpperBoundRef(y)),
     ) == MOI.IN_CONFLICT
-    @test MOI.get(solver, MOIIS.ConflictCount()) == 1
+    @test MOI.get(solver, MOI.ConflictCount()) == 1
     @test MOI.get(
         solver,
-        MOIIS.ConstraintConflictStatus(1),
+        MOI.ConstraintConflictStatus(1),
         index(LowerBoundRef(y)),
     ) == MOI.IN_CONFLICT
     @test MOI.get(
         solver,
-        MOIIS.ConstraintConflictStatus(1),
+        MOI.ConstraintConflictStatus(1),
         index(UpperBoundRef(y)),
     ) == MOI.IN_CONFLICT
-    @test MOI.get(solver, MOIIS.ConstraintConflictStatus(1), index(c)) ==
+    @test MOI.get(solver, MOI.ConstraintConflictStatus(1), index(c)) ==
           MOI.NOT_IN_CONFLICT
     # the next two could be errors
     @test MOI.get(
         solver,
-        MOIIS.ConstraintConflictStatus(2),
+        MOI.ConstraintConflictStatus(2),
         index(LowerBoundRef(y)),
     ) == MOI.NOT_IN_CONFLICT
     @test MOI.get(
         solver,
-        MOIIS.ConstraintConflictStatus(2),
+        MOI.ConstraintConflictStatus(2),
         index(UpperBoundRef(y)),
     ) == MOI.NOT_IN_CONFLICT
     #
@@ -746,6 +746,13 @@ function test_iis_binary()
         MOI.ConstraintConflictStatus(),
         index(BinaryRef(x)),
     ) == MOI.MAYBE_IN_CONFLICT
+    return
+end
+
+function test_deprecated()
+    @test (@test_deprecated MOIIS.ConflictCount()) == MOI.ConflictCount()
+    @test (@test_deprecated MOIIS.ConstraintConflictStatus(2)) ==
+          MOI.ConstraintConflictStatus(2)
     return
 end
 

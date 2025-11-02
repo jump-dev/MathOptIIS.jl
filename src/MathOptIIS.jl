@@ -12,4 +12,7 @@ include("bound.jl")
 include("range.jl")
 include("solver.jl")
 
+@deprecate ConflictCount MOI.ConflictCount
+@deprecate ConstraintConflictStatus MOI.ConstraintConflictStatus
+
 end # module MathOptIIS
