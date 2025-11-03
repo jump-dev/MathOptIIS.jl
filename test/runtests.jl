@@ -430,9 +430,9 @@ function test_pass_attribute()
     MOI.set(solver, MOIIS.InnerOptimizer(), HiGHS.Optimizer)
     MOI.set(solver, MOI.TimeLimitSec(), 5.0)
     @test MOI.get(solver, MOI.TimeLimitSec()) == 5.0
-    @test MOI.get(solver, MOI.Silent()) == false
-    MOI.set(solver, MOI.Silent(), true)
     @test MOI.get(solver, MOI.Silent()) == true
+    MOI.set(solver, MOI.Silent(), false)
+    @test MOI.get(solver, MOI.Silent()) == false
     @test MOI.get(solver, MOIIS.ElasticFilterTolerance()) == 1e-5
     MOI.set(solver, MOIIS.ElasticFilterTolerance(), 1e-3)
     @test MOI.get(solver, MOIIS.ElasticFilterTolerance()) == 1e-3
