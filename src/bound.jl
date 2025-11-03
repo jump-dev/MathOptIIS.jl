@@ -4,90 +4,86 @@
 # in the LICENSE.md file or at https://opensource.org/licenses/MIT.
 
 function _bound_infeasibility!(optimizer::Optimizer, ::Type{T}) where {T}
+    return _bound_infeasibility!(optimizer.original_model, optimizer.results, T)
+end
+
+function _bound_infeasibility!(
+    original_model::MOI.ModelLike,
+    results::Vector{InfeasibilityData},
+    ::Type{T},
+) where {T}
     variables = Dict{MOI.VariableIndex,Interval{T}}()
-
-    variable_indices =
-        MOI.get(optimizer.original_model, MOI.ListOfVariableIndices())
-
+    variable_indices = MOI.get(original_model, MOI.ListOfVariableIndices())
     lb = Dict{MOI.VariableIndex,T}()
     lb_con = Dict{MOI.VariableIndex,MOI.ConstraintIndex}()
     ub = Dict{MOI.VariableIndex,T}()
     ub_con = Dict{MOI.VariableIndex,MOI.ConstraintIndex}()
-
     for con in MOI.get(
-        optimizer.original_model,
+        original_model,
         MOI.ListOfConstraintIndices{MOI.VariableIndex,MOI.EqualTo{T}}(),
     )
-        set = MOI.get(optimizer.original_model, MOI.ConstraintSet(), con)
-        func = MOI.get(optimizer.original_model, MOI.ConstraintFunction(), con)
+        set = MOI.get(original_model, MOI.ConstraintSet(), con)
+        func = MOI.get(original_model, MOI.ConstraintFunction(), con)
         lb[func] = set.value
         lb_con[func] = con
         ub[func] = set.value
         ub_con[func] = con
     end
-
     for con in MOI.get(
-        optimizer.original_model,
+        original_model,
         MOI.ListOfConstraintIndices{MOI.VariableIndex,MOI.LessThan{T}}(),
     )
-        set = MOI.get(optimizer.original_model, MOI.ConstraintSet(), con)
-        func = MOI.get(optimizer.original_model, MOI.ConstraintFunction(), con)
-        # lb[func] = -Inf
+        set = MOI.get(original_model, MOI.ConstraintSet(), con)
+        func = MOI.get(original_model, MOI.ConstraintFunction(), con)
+        # lb[func] = typemin(T)
         ub[func] = set.upper
         ub_con[func] = con
     end
-
     for con in MOI.get(
-        optimizer.original_model,
+        original_model,
         MOI.ListOfConstraintIndices{MOI.VariableIndex,MOI.GreaterThan{T}}(),
     )
-        set = MOI.get(optimizer.original_model, MOI.ConstraintSet(), con)
-        func = MOI.get(optimizer.original_model, MOI.ConstraintFunction(), con)
+        set = MOI.get(original_model, MOI.ConstraintSet(), con)
+        func = MOI.get(original_model, MOI.ConstraintFunction(), con)
         lb[func] = set.lower
         lb_con[func] = con
-        # ub[func] = Inf
+        # ub[func] = typemax(T)
     end
-
     for con in MOI.get(
-        optimizer.original_model,
+        original_model,
         MOI.ListOfConstraintIndices{MOI.VariableIndex,MOI.Interval{T}}(),
     )
-        set = MOI.get(optimizer.original_model, MOI.ConstraintSet(), con)
-        func = MOI.get(optimizer.original_model, MOI.ConstraintFunction(), con)
+        set = MOI.get(original_model, MOI.ConstraintSet(), con)
+        func = MOI.get(original_model, MOI.ConstraintFunction(), con)
         lb[func] = set.lower
         lb_con[func] = con
         ub[func] = set.upper
         ub_con[func] = con
     end
-
-    # for con in MOI.get(optimizer.original_model, MOI.ListOfConstraintIndices{MOI.VariableIndex,MOI.SemiContinuous{T}}())
-    #     set = MOI.get(optimizer.original_model, MOI.ConstraintSet(), con)
-    #     func = MOI.get(optimizer.original_model, MOI.ConstraintFunction(), con)
+    # for con in MOI.get(original_model, MOI.ListOfConstraintIndices{MOI.VariableIndex,MOI.SemiContinuous{T}}())
+    #     set = MOI.get(original_model, MOI.ConstraintSet(), con)
+    #     func = MOI.get(original_model, MOI.ConstraintFunction(), con)
     #     lb[func] = 0 # set.lower
     #     ub[func] = set.upper
     # end
-
-    # for con in MOI.get(optimizer.original_model, MOI.ListOfConstraintIndices{MOI.VariableIndex,MOI.SemiInteger{T}}())
-    #     set = MOI.get(optimizer.original_model, MOI.ConstraintSet(), con)
-    #     func = MOI.get(optimizer.original_model, MOI.ConstraintFunction(), con)
+    # for con in MOI.get(original_model, MOI.ListOfConstraintIndices{MOI.VariableIndex,MOI.SemiInteger{T}}())
+    #     set = MOI.get(original_model, MOI.ConstraintSet(), con)
+    #     func = MOI.get(original_model, MOI.ConstraintFunction(), con)
     #     lb[func] = 0 #set.lower
     #     ub[func] = set.upper
     # end
-
     bounds_consistent = true
-
     for con in MOI.get(
-        optimizer.original_model,
+        original_model,
         MOI.ListOfConstraintIndices{MOI.VariableIndex,MOI.Integer}(),
     )
-        func = MOI.get(optimizer.original_model, MOI.ConstraintFunction(), con)
-        _lb = get(lb, func, -Inf)
-        _ub = get(ub, func, Inf)
+        func = MOI.get(original_model, MOI.ConstraintFunction(), con)
+        _lb, _ub = get(lb, func, typemin(T)), get(ub, func, typemax(T))
         if abs(_ub - _lb) < 1 && ceil(_ub) == ceil(_lb)
             push!(
-                optimizer.results,
+                results,
                 InfeasibilityData(
-                    [con, lb_con[func], ub_con[func]],
+                    MOI.ConstraintIndex[con, lb_con[func], ub_con[func]],
                     true,
                     IntegralityData(_lb, _ub, MOI.Integer()),
                 ),
@@ -95,19 +91,17 @@ function _bound_infeasibility!(optimizer::Optimizer, ::Type{T}) where {T}
             bounds_consistent = false
         end
     end
-
     for con in MOI.get(
-        optimizer.original_model,
+        original_model,
         MOI.ListOfConstraintIndices{MOI.VariableIndex,MOI.ZeroOne}(),
     )
-        func = MOI.get(optimizer.original_model, MOI.ConstraintFunction(), con)
-        _lb = get(lb, func, -Inf)
-        _ub = get(ub, func, Inf)
-        if _lb > 0 && _ub < 1
+        func = MOI.get(original_model, MOI.ConstraintFunction(), con)
+        _lb, _ub = get(lb, func, typemin(T)), get(ub, func, typemax(T))
+        if 0 < _lb && _ub < 1
             push!(
-                optimizer.results,
+                results,
                 InfeasibilityData(
-                    [con, lb_con[func], ub_con[func]],
+                    MOI.ConstraintIndex[con, lb_con[func], ub_con[func]],
                     true,
                     IntegralityData(_lb, _ub, MOI.ZeroOne()),
                 ),
@@ -115,35 +109,33 @@ function _bound_infeasibility!(optimizer::Optimizer, ::Type{T}) where {T}
             bounds_consistent = false
         elseif _lb > 1
             push!(
-                optimizer.results,
+                results,
                 InfeasibilityData(
-                    [con, lb_con[func]],
+                    MOI.ConstraintIndex[con, lb_con[func]],
                     true,
-                    IntegralityData(_lb, Inf, MOI.ZeroOne()),
+                    IntegralityData(_lb, typemax(T), MOI.ZeroOne()),
                 ),
             )
             bounds_consistent = false
         elseif _ub < 0
             push!(
-                optimizer.results,
+                results,
                 InfeasibilityData(
-                    [con, ub_con[func]],
+                    MOI.ConstraintIndex[con, ub_con[func]],
                     true,
-                    IntegralityData(-Inf, _ub, MOI.ZeroOne()),
+                    IntegralityData(typemin(T), _ub, MOI.ZeroOne()),
                 ),
             )
             bounds_consistent = false
         end
     end
-
     for var in variable_indices
-        _lb = get(lb, var, -Inf)
-        _ub = get(ub, var, Inf)
+        _lb, _ub = get(lb, var, typemin(T)), get(ub, var, typemax(T))
         if _lb > _ub
             push!(
-                optimizer.results,
+                results,
                 InfeasibilityData(
-                    [lb_con[var], ub_con[var]],
+                    MOI.ConstraintIndex[lb_con[var], ub_con[var]],
                     true,
                     BoundsData(_lb, _ub),
                 ),
