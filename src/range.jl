@@ -37,6 +37,12 @@ end
 
 # Back to functions written for MathOptIIS.jl
 
+_supports_range(::Type{MOI.ScalarAffineFunction{T}}) where {T} = true
+_supports_range(::Type{MOI.EqualTo{T}}) where {T} = true
+_supports_range(::Type{MOI.GreaterThan{T}}) where {T} = true
+_supports_range(::Type{MOI.LessThan{T}}) where {T} = true
+_supports_range(::Type{T}) where {T} = false
+
 function _range_infeasibility!(
     optimizer::Optimizer,
     ::Type{T},
@@ -44,33 +50,24 @@ function _range_infeasibility!(
     lb_con::Dict{MOI.VariableIndex,MOI.ConstraintIndex},
     ub_con::Dict{MOI.VariableIndex,MOI.ConstraintIndex},
 ) where {T}
-    range_consistent = _range_infeasibility!(
-        optimizer,
-        optimizer.original_model,
-        T,
-        variables,
-        lb_con,
-        ub_con,
-        MOI.EqualTo{T},
-    )
-    range_consistent &= _range_infeasibility!(
-        optimizer,
-        optimizer.original_model,
-        T,
-        variables,
-        lb_con,
-        ub_con,
-        MOI.LessThan{T},
-    )
-    return _range_infeasibility!(
-        optimizer,
-        optimizer.original_model,
-        T,
-        variables,
-        lb_con,
-        ub_con,
-        MOI.GreaterThan{T},
-    )
+    range_consistent = true
+    for (F, S) in
+        MOI.get(optimizer.original_model, MOI.ListOfConstraintTypesPresent())
+        if !_supports_range(F) || !_supports_range(S)
+            continue
+        end
+        range_consistent &= _range_infeasibility!(
+            optimizer,
+            optimizer.original_model,
+            T,
+            variables,
+            lb_con,
+            ub_con,
+            F,
+            S,
+        )
+    end
+    return range_consistent
 end
 
 function _range_infeasibility!(
@@ -80,13 +77,11 @@ function _range_infeasibility!(
     variables::Dict{MOI.VariableIndex,Interval{T}},
     lb_con::Dict{MOI.VariableIndex,MOI.ConstraintIndex},
     ub_con::Dict{MOI.VariableIndex,MOI.ConstraintIndex},
+    ::Type{F},
     ::Type{S},
-) where {T,S}
+) where {T,F,S}
     range_consistent = true
-    for con in MOI.get(
-        original_model,
-        MOI.ListOfConstraintIndices{MOI.ScalarAffineFunction{T},S}(),
-    )
+    for con in MOI.get(original_model, MOI.ListOfConstraintIndices{F,S}())
         if !_in_time(optimizer)
             return range_consistent
         end
