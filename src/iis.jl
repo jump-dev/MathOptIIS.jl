@@ -71,8 +71,7 @@ struct InfeasibleModel end
 
 function MOI.set(optimizer::Optimizer, ::InfeasibleModel, model::MOI.ModelLike)
     optimizer.original_model = model
-    # this also resets the results
-    optimizer.results = InfeasibilityData[]
+    empty!(optimizer.results)
     optimizer.status = MOI.COMPUTE_CONFLICT_NOT_CALLED
     return
 end
@@ -196,13 +195,9 @@ function MOI.get(optimizer::Optimizer, ::ElasticFilterIgnoreIntegrality)
     return optimizer.ignore_integrality
 end
 
-function MOI.get(optimizer::Optimizer, ::MOI.ConflictStatus)
-    return optimizer.status
-end
+MOI.get(optimizer::Optimizer, ::MOI.ConflictStatus) = optimizer.status
 
-function MOI.get(optimizer::Optimizer, ::MOI.ConflictCount)
-    return length(optimizer.results)
-end
+MOI.get(optimizer::Optimizer, ::MOI.ConflictCount) = length(optimizer.results)
 
 function MOI.get(
     optimizer::Optimizer,
@@ -239,21 +234,17 @@ end
 
 function MOI.compute_conflict!(optimizer::Optimizer)
     optimizer.status = MOI.NO_CONFLICT_FOUND
-    optimizer.results = InfeasibilityData[]
+    empty!(optimizer.results)
     optimizer.start_time = time()
-
     if optimizer.verbose
         println("Starting MathOptIIS IIS search.")
     end
-
     T = Float64
-
-    is_feasible = _feasibility_check(optimizer)
+    is_feasible = _feasibility_check(optimizer, optimizer.original_model)
     if is_feasible && !optimizer.skip_feasibility_check
         optimizer.status = MOI.NO_CONFLICT_EXISTS
         return optimizer.results
     end
-
     if optimizer.verbose
         println("Starting bound analysis.")
     end
@@ -265,17 +256,15 @@ function MOI.compute_conflict!(optimizer::Optimizer)
             "Complete bound analysis found $bound_infeasibilities infeasibilities.",
         )
     end
-    if length(optimizer.results) > 0
+    if !isempty(optimizer.results)
         optimizer.status = MOI.CONFLICT_FOUND
     end
-
     # check PSD diagonal >= 0 ?
     # other cones?
     if (!bounds_consistent && optimizer.stop_if_infeasible_bounds) ||
        !_in_time(optimizer)
         return
     end
-
     # second layer of infeasibility analysis is constraint range analysis
     if optimizer.verbose
         println("Starting range analysis.")
@@ -288,16 +277,13 @@ function MOI.compute_conflict!(optimizer::Optimizer)
             "Complete range analysis found $range_infeasibilities infeasibilities.",
         )
     end
-    if length(optimizer.results) > 0
+    if !isempty(optimizer.results)
         optimizer.status = MOI.CONFLICT_FOUND
     end
-
     if (!range_consistent && optimizer.stop_if_infeasible_ranges) ||
        !_in_time(optimizer)
         return
     end
-
-    # check if there is a optimizer
     # third layer is an IIS resolver
     if optimizer.optimizer === nothing
         println(
@@ -311,20 +297,16 @@ function MOI.compute_conflict!(optimizer::Optimizer)
     iis = _elastic_filter(optimizer)
     # for now, only one iis is computed
     if iis !== nothing
-        maybe_constraints = _get_variables_in_constraints(optimizer, iis)
+        maybe_constraints =
+            _get_variables_in_constraints(optimizer.original_model, iis)
         push!(
             optimizer.results,
-            InfeasibilityData(
-                iis,
-                true,
-                NoData();
-                maybe_constraints = maybe_constraints,
-            ),
+            InfeasibilityData(iis, true, NoData(); maybe_constraints),
         )
         optimizer.status = MOI.CONFLICT_FOUND
     end
-    iis_infeasibilities = ifelse(iis === nothing, 0, 1)
     if optimizer.verbose
+        iis_infeasibilities = iis === nothing ? 0 : 1
         println(
             "Complete elastic filter solver found $iis_infeasibilities infeasibilities.",
         )
@@ -334,31 +316,21 @@ function MOI.compute_conflict!(optimizer::Optimizer)
 end
 
 function _get_variables_in_constraints(
-    optimizer::Optimizer,
+    model::MOI.ModelLike,
     con::Vector{MOI.ConstraintIndex},
 )
     variables = Set{MOI.VariableIndex}()
     for c in con
-        _get_variables_in_constraints!(optimizer, c, variables)
+        _get_variables_in_constraints!(model, c, variables)
     end
-    con_types =
-        MOI.get(optimizer.original_model, MOI.ListOfConstraintTypesPresent())
     variable_constraints = MOI.ConstraintIndex[]
-    for (F, S) in con_types
-        if F <: MOI.VariableIndex
-            _variable_constraints = MOI.get(
-                optimizer.original_model,
-                MOI.ListOfConstraintIndices{F,S}(),
-            )
-            for con in _variable_constraints
-                var = MOI.get(
-                    optimizer.original_model,
-                    MOI.ConstraintFunction(),
-                    con,
-                )
-                if var in variables
-                    push!(variable_constraints, con)
-                end
+    for (F, S) in MOI.get(model, MOI.ListOfConstraintTypesPresent())
+        if !(F <: MOI.VariableIndex)
+            continue
+        end
+        for con in MOI.get(model, MOI.ListOfConstraintIndices{F,S}())
+            if MOI.get(model, MOI.ConstraintFunction(), con) in variables
+                push!(variable_constraints, con)
             end
         end
     end
@@ -366,29 +338,27 @@ function _get_variables_in_constraints(
 end
 
 function _get_variables_in_constraints!(
-    optimizer::Optimizer,
-    con::MOI.ConstraintIndex{F},
+    model::MOI.ModelLike,
+    con::MOI.ConstraintIndex{<:MOI.ScalarAffineFunction},
     variables::Set{MOI.VariableIndex},
-) where {F<:MOI.ScalarAffineFunction}
-    func = MOI.get(optimizer.original_model, MOI.ConstraintFunction(), con)
-    for term in func.terms
+)
+    f = MOI.get(model, MOI.ConstraintFunction(), con)
+    for term in f.terms
         push!(variables, term.variable)
     end
     return
 end
 
 function _get_variables_in_constraints!(
-    optimizer::Optimizer,
-    con::MOI.ConstraintIndex{F},
-    variables::Set{MOI.VariableIndex},
-) where {F}
-    # skip
-    return
+    ::MOI.ModelLike,
+    ::MOI.ConstraintIndex,
+    ::Set{MOI.VariableIndex},
+)
+    return  # skip
 end
 
-function _feasibility_check(optimizer::Optimizer)
-    termination_status =
-        MOI.get(optimizer.original_model, MOI.TerminationStatus())
+function _feasibility_check(optimizer::Optimizer, original_model::MOI.ModelLike)
+    termination_status = MOI.get(original_model, MOI.TerminationStatus())
     if optimizer.verbose
         println("Original model termination status: $(termination_status)")
     end
@@ -396,7 +366,7 @@ function _feasibility_check(optimizer::Optimizer)
        (MOI.OTHER_ERROR, MOI.INVALID_MODEL, MOI.OPTIMIZE_NOT_CALLED)
         return false # because we can assert it is feasible
     end
-    primal_status = MOI.get(optimizer.original_model, MOI.PrimalStatus())
+    primal_status = MOI.get(original_model, MOI.PrimalStatus())
     if optimizer.verbose
         println("Original model primal status: $(primal_status)")
     end
