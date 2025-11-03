@@ -53,7 +53,7 @@ Base.@kwdef mutable struct Optimizer
     #
     # iis attributes
     time_limit::Float64 = Inf
-    verbose::Bool = false
+    verbose::Bool = true
     skip_feasibility_check::Bool = false
     stop_if_infeasible_bounds::Bool = true
     stop_if_infeasible_ranges::Bool = true
@@ -258,7 +258,7 @@ function MOI.compute_conflict!(optimizer::Optimizer)
         println("Starting bound analysis.")
     end
     bounds_consistent, variables, lb_con, ub_con =
-        _bound_infeasibility!(optimizer, T)
+        @time _bound_infeasibility!(optimizer, T)
     bound_infeasibilities = length(optimizer.results)
     if optimizer.verbose
         println(
@@ -281,7 +281,7 @@ function MOI.compute_conflict!(optimizer::Optimizer)
         println("Starting range analysis.")
     end
     range_consistent =
-        _range_infeasibility!(optimizer, T, variables, lb_con, ub_con)
+        @time _range_infeasibility!(optimizer, T, variables, lb_con, ub_con)
     range_infeasibilities = length(optimizer.results) - bound_infeasibilities
     if optimizer.verbose
         println(
@@ -291,6 +291,7 @@ function MOI.compute_conflict!(optimizer::Optimizer)
     if length(optimizer.results) > 0
         optimizer.status = MOI.CONFLICT_FOUND
     end
+    return
 
     if (!range_consistent && optimizer.stop_if_infeasible_ranges) ||
        !_in_time(optimizer)

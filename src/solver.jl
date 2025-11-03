@@ -84,24 +84,30 @@ function _elastic_filter(optimizer::Optimizer)
 
     de_elastisized = []
 
-    changed_obj = false
-
     # all (affine, non-bound) constraints are relaxed at this point
-    # we will try to set positive slacks to zero until the model infeasible
-    # the constraints of the fixed slacks are a IIS candidate
+    # we will try to set positive slacks to zero until the model becomes
+    # infeasible. The constraints of the fixed slacks then form a IIS candidate.
 
     for i in 1:max_iterations
         if !_in_time(optimizer)
             return nothing
         end
+        if optimizer.verbose
+            println("Solving iteration $i...")
+        end
         MOI.optimize!(model)
+        if optimizer.verbose
+            println("Iteration $i solved.")
+        end
         status = MOI.get(model, MOI.TerminationStatus())
         if status in ( # possibily primal unbounded statuses
             MOI.INFEASIBLE_OR_UNBOUNDED,
             MOI.DUAL_INFEASIBLE,
             MOI.ALMOST_DUAL_INFEASIBLE,
         )
-            #
+            if optimizer.verbose
+                @warn("Termination status is $status")
+            end
         end
         if status in
            (MOI.INFEASIBLE, MOI.ALMOST_INFEASIBLE, MOI.LOCALLY_INFEASIBLE)
@@ -143,8 +149,6 @@ function _elastic_filter(optimizer::Optimizer)
     # consider deleting all no iis constraints
     # be careful with intervals
 
-    obj_type = MOI.get(model, MOI.ObjectiveFunctionType())
-    obj_func = MOI.get(model, MOI.ObjectiveFunction{obj_type}())
     obj_sense = MOI.get(model, MOI.ObjectiveSense())
 
     candidates = MOI.ConstraintIndex[]
