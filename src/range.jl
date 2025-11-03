@@ -51,10 +51,8 @@ function _range_infeasibility!(
     ub_con::Dict{MOI.VariableIndex,MOI.ConstraintIndex},
 ) where {T}
     range_consistent = true
-    for (F, S) in MOI.get(
-        optimizer.original_model,
-        MOI.ListOfConstraintTypesPresent(),
-    )
+    for (F, S) in
+        MOI.get(optimizer.original_model, MOI.ListOfConstraintTypesPresent())
         if !_supports_range(F) || !_supports_range(S)
             continue
         end
