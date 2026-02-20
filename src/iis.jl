@@ -54,7 +54,6 @@ Base.@kwdef mutable struct Optimizer
     # iis attributes
     time_limit::Float64 = Inf
     verbose::Bool = false
-    skip_feasibility_check::Bool = false
     stop_if_infeasible_bounds::Bool = true
     stop_if_infeasible_ranges::Bool = true
     deletion_filter::Bool = true
@@ -123,17 +122,6 @@ end
 
 function MOI.get(optimizer::Optimizer, ::MOI.Silent)
     return !optimizer.verbose
-end
-
-struct SkipFeasibilityCheck <: MOI.AbstractOptimizerAttribute end
-
-function MOI.set(optimizer::Optimizer, ::SkipFeasibilityCheck, value::Bool)
-    optimizer.skip_feasibility_check = value
-    return
-end
-
-function MOI.get(optimizer::Optimizer, ::SkipFeasibilityCheck)
-    return optimizer.skip_feasibility_check
 end
 
 struct StopIfInfeasibleBounds end
@@ -240,8 +228,7 @@ function MOI.compute_conflict!(optimizer::Optimizer)
         println("Starting MathOptIIS IIS search.")
     end
     T = Float64
-    is_feasible = _feasibility_check(optimizer, optimizer.original_model)
-    if is_feasible && !optimizer.skip_feasibility_check
+    if _feasibility_check(optimizer, optimizer.original_model)
         optimizer.status = MOI.NO_CONFLICT_EXISTS
         return optimizer.results
     end

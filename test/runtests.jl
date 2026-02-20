@@ -407,13 +407,6 @@ function test_interval()
     MOI.compute_conflict!(solver)
     data = solver.results
     @test length(data) == 0
-    @test !MOI.get(solver, MOIIS.SkipFeasibilityCheck())
-    MOI.set(solver, MOIIS.SkipFeasibilityCheck(), true)
-    @test MOI.get(solver, MOIIS.SkipFeasibilityCheck())
-    MOI.compute_conflict!(solver)
-    data = solver.results
-    @test length(data) == 0
-    # TODO check status
     return
 end
 
@@ -436,11 +429,6 @@ function test_pass_attribute()
     @test MOI.get(solver, MOIIS.ElasticFilterTolerance()) == 1e-5
     MOI.set(solver, MOIIS.ElasticFilterTolerance(), 1e-3)
     @test MOI.get(solver, MOIIS.ElasticFilterTolerance()) == 1e-3
-    MOI.compute_conflict!(solver)
-    data = solver.results
-    @test length(data) == 0
-    MOI.set(solver, MOIIS.SkipFeasibilityCheck(), true)
-    @test MOI.get(solver, MOIIS.SkipFeasibilityCheck())
     MOI.compute_conflict!(solver)
     data = solver.results
     @test length(data) == 0
