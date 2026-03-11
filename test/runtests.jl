@@ -1132,6 +1132,34 @@ function test_time_limit_interrupt()
     return
 end
 
+function test_time_limit_interrupt_with_zero_one()
+    model = HiGHS.Optimizer()
+    # We want a model where x in {0,1} is relaxed, and [0, 1] is problematic.
+    # But also it's not infeasible based on the bounds.
+    MOI.Utilities.loadfromstring!(
+        model,
+        """
+        variables: x, y
+        x in ZeroOne()
+        1.0 * y == 0.25
+        1.0 * x + 1.0 * y == 1.5
+        """,
+    )
+    solver = MathOptIIS.Optimizer()
+    MOI.set(solver, MathOptIIS.InfeasibleModel(), model)
+    MOI.set(solver, MOI.TimeLimitSec(), 100.0)
+    MOI.set(solver, MathOptIIS.InnerOptimizer(), _mock_optimizer(solver, 3))
+    MOI.compute_conflict!(solver)
+    @test MOI.get(solver, MOI.ConflictStatus()) == MOI.CONFLICT_FOUND
+    iis = _copy_conflict(model, solver)
+    x = MOI.get(iis, MOI.VariableIndex, "x")
+    @test MOI.is_valid(
+        iis,
+        MOI.ConstraintIndex{MOI.VariableIndex,MOI.ZeroOne}(x.value),
+    )
+    return
+end
+
 function test_scs_with_primal_dual_infeasibility()
     # The [x, y] in Nonnegatives(2) is redundant, but we can't tell that because
     # we can't easily relax it.
