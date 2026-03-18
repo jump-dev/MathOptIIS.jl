@@ -908,7 +908,7 @@ function test_a_large_iis_with_all_constraints()
 end
 
 function test_enlight4()
-    model = read_from_file(joinpath(@__DIR__, "data", "enlight4.mps"))
+    model = read_from_file(joinpath(@__DIR__, "data", "enlight4.mps.gz"))
     solver = MathOptIIS.Optimizer()
     MOI.set(solver, MathOptIIS.InfeasibleModel(), backend(model))
     MOI.set(solver, MathOptIIS.InnerOptimizer(), HiGHS.Optimizer)
@@ -923,7 +923,7 @@ end
 # This problem is surprisingly difficult to solve the relaxed problem of. It
 # could be useful for the HiGHS devs.
 function test_enlight9()
-    model = read_from_file(joinpath(@__DIR__, "data", "enlight9.mps"))
+    model = read_from_file(joinpath(@__DIR__, "data", "enlight9.mps.gz"))
     solver = MathOptIIS.Optimizer()
     MOI.set(solver, MathOptIIS.InfeasibleModel(), backend(model))
     MOI.set(solver, MathOptIIS.InnerOptimizer(), HiGHS.Optimizer)
@@ -1115,7 +1115,7 @@ function _mock_optimizer(solver, N)
 end
 
 function test_time_limit_interrupt()
-    model = read_from_file(joinpath(@__DIR__, "data", "enlight4.mps"))
+    model = read_from_file(joinpath(@__DIR__, "data", "enlight4.mps.gz"))
     @testset "N=$N" for N in [5, 12, 13, 14, 15, 16]
         solver = MathOptIIS.Optimizer()
         MOI.set(solver, MathOptIIS.InfeasibleModel(), backend(model))
