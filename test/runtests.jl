@@ -576,6 +576,8 @@ function test_iis_binary()
         MOI.ConstraintConflictStatus(),
         index(BinaryRef(x)),
     ) == MOI.MAYBE_IN_CONFLICT
+    @test MOI.get(solver, MathOptIIS.ListOfConstraintIndicesInConflict()) ==
+          MOI.ConstraintIndex[index(c1), index(BinaryRef(x))]
     return
 end
 
@@ -609,7 +611,8 @@ function test_verbose()
     [MathOptIIS]   analyzing MOI.ScalarAffineFunction{Float64} -in- MOI.LessThan{Float64}
     [MathOptIIS]   range analysis found 0 infeasible subsets
     [MathOptIIS] starting elastic filter
-    [MathOptIIS]   relaxing integrality if required
+    [MathOptIIS]   testing if we can relax integrality
+    [MathOptIIS]     integrality is not required
     [MathOptIIS]   constructing the penalty relaxation
     [MathOptIIS]   using INFEASIBILITY_CERTIFICATE to construct candidate set
     [MathOptIIS]     size of the candidate set: 2
@@ -1179,6 +1182,32 @@ function test_scs_with_primal_dual_infeasibility()
         with_bridge_type = Float64,
         with_cache_type = Float64,
     )
+    return
+end
+
+function test_empty()
+    model = HiGHS.Optimizer()
+    MOI.Utilities.loadfromstring!(
+        model,
+        """
+        variables: x, y
+        x in ZeroOne()
+        1.0 * y == 0.25
+        1.0 * x + 1.0 * y == 1.5
+        """,
+    )
+    solver = MathOptIIS.Optimizer()
+    MOI.set(solver, MathOptIIS.InfeasibleModel(), model)
+    MOI.set(solver, MOI.TimeLimitSec(), 100.0)
+    MOI.set(solver, MathOptIIS.InnerOptimizer(), _mock_optimizer(solver, 3))
+    MOI.compute_conflict!(solver)
+    @test MOI.get(solver, MOI.ConflictStatus()) == MOI.CONFLICT_FOUND
+    MOI.empty!(solver)
+    @test solver.infeasible_model === nothing
+    @test isnan(solver.start_time)
+    @test MOI.get(solver, MOI.ConflictStatus()) ==
+          MOI.COMPUTE_CONFLICT_NOT_CALLED
+    @test MOI.get(solver, MOI.ConflictCount()) == 0
     return
 end
 

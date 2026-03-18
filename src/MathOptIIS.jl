@@ -177,6 +177,14 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     end
 end
 
+function MOI.empty!(model::Optimizer)
+    model.infeasible_model = nothing
+    model.start_time = NaN
+    model.status = MOI.COMPUTE_CONFLICT_NOT_CALLED
+    empty!(model.results)
+    return
+end
+
 # MathOptIIS.InfeasibleModel
 
 """
@@ -293,8 +301,10 @@ function MOI.get(optimizer::Optimizer, attr::ListOfConstraintIndicesInConflict)
     if !(1 <= attr.conflict_index <= length(optimizer.results))
         return MOI.ConstraintIndex[]
     end
-    # TODO(odow): this doesn't include maybe constraints?
-    return optimizer.results[attr.conflict_index].constraints
+    return vcat(
+        optimizer.results[attr.conflict_index].constraints,
+        optimizer.results[attr.conflict_index].maybe_constraints,
+    )
 end
 
 # MOI.compute_conflict!
@@ -404,7 +414,7 @@ function _feasibility_check(
     end
     if termination_status in
        (MOI.OTHER_ERROR, MOI.INVALID_MODEL, MOI.OPTIMIZE_NOT_CALLED)
-        return false # because we can assert it is feasible
+        return false # because we can't assert it is feasible
     end
     primal_status = MOI.get(infeasible_model, MOI.PrimalStatus())
     if optimizer.verbose
@@ -478,8 +488,7 @@ function _check_conflict(x::MOI.VariableIndex, info::_VariableInfo{T}) where {T}
             metadata = Metadata(lb, ub, nothing),
         )
     elseif info.integer
-        # I don't think this `if` is correct?
-        if abs(ub - lb) < 1 && ceil(Int, ub) == ceil(Int, lb)
+        if abs(ub - lb) < 1 && ceil(Int, lb) > floor(Int, ub)
             con = MOI.ConstraintIndex{MOI.VariableIndex,MOI.Integer}(x.value)
             c = MOI.ConstraintIndex[con, _ci(x, info.lower), _ci(x, info.upper)]
             return IIS(c; metadata = Metadata(lb, ub, MOI.Integer()))
@@ -711,7 +720,7 @@ function _elastic_filter(
     # Step 1: relax integrality and solve.
     # ==========================================================================
     if optimizer.verbose
-        println("[MathOptIIS]   relaxing integrality if required")
+        println("[MathOptIIS]   testing if we can relax integrality")
     end
     relax_info = _relax_integrality(model, variable_info)
     # It's a bit wasteful to re-solve this problem when we know it is
@@ -721,6 +730,9 @@ function _elastic_filter(
     #    to cache some work. It's only one extra solve.
     _optimize!(optimizer, model)
     if _is_feasible(model)
+        if optimizer.verbose
+            println("[MathOptIIS]     integrality is required")
+        end
         # The relaxed problem is feasible. This is significantly more difficult
         # to deal with because we need to add back in the integrality
         # restrictions.
@@ -731,6 +743,8 @@ function _elastic_filter(
             MOI.delete(model, ci)
             MOI.add_constraint(model, x, MOI.ZeroOne())
         end
+    elseif optimizer.verbose
+        println("[MathOptIIS]     integrality is not required")
     end
     # ==========================================================================
     # Step 2: additive filter. Construct a superset of the IIS
@@ -979,7 +993,8 @@ function _iterative_deletion_filter(
 end
 
 function _is_feasible(model::MOI.ModelLike)
-    return MOI.get(model, MOI.PrimalStatus()) == MOI.FEASIBLE_POINT
+    return MOI.get(model, MOI.PrimalStatus()) in
+           (MOI.FEASIBLE_POINT, MOI.NEARLY_FEASIBLE_POINT)
 end
 
 function _dual_certificate!(
