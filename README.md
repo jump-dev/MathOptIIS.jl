@@ -27,7 +27,7 @@ Pkg.add("MathOptIIS")
 
 ## Usage
 
-This package is not intended to be called directly from user-code. Instead, it
+MathOptIIS is not intended to be called directly from user-code. Instead, it
 should be added as a dependency to solver wrappers that want to provide an IIS.
 
 To add to an existing wrapper, add a new field:
@@ -41,6 +41,11 @@ function MOI.compute_conflict!(model::Optimizer)
     solver = MathOptIIS.Optimizer()
     MOI.set(solver, MathOptIIS.InfeasibleModel(), model)
     MOI.set(solver, MathOptIIS.InnerOptimizer(), Optimizer)
+    # Optional: set the solver's silent to true or false. In this example,
+    # follow the outer attribute.
+    MOI.set(solver, MOI.Silent(), MOI.get(model, MOI.Silent()))
+    # Optional: set a time limit. In this case, 60 seconds.
+    MOI.set(solver, MOI.TimeLimitSec(), 60.0)
     MOI.compute_conflict!(solver)
     model.conflict_solver = solver
     return
@@ -49,6 +54,13 @@ end
 function MOI.get(optimizer::Optimizer, attr::MOI.ConflictStatus)
     if optimizer.conflict_solver === nothing
         return MOI.COMPUTE_CONFLICT_NOT_CALLED
+    end
+    return MOI.get(optimizer.conflict_solver, attr)
+end
+
+function MOI.get(optimizer::Optimizer, attr::MOI.ConflictCount)
+    if optimizer.conflict_solver === nothing
+        return 0
     end
     return MOI.get(optimizer.conflict_solver, attr)
 end
