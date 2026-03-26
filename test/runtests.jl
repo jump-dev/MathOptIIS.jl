@@ -978,7 +978,7 @@ function test_scs_with_deletion()
         variables: x, y
         [1.0 * x, 1.0 * y] in Nonnegatives(2)
         [-1.0 * x + -1.0 * y + -1.0] in Nonnegatives(1)
-        1.0 * x + 1.0 * y >= 0.0
+        1.0 * x + 1.0 * y >= -2.0
         """,
         """
         variables: x, y
