@@ -555,6 +555,34 @@ function test_iis_spare()
     return
 end
 
+function test_iis_spare_scs()
+    model = Model(SCS.Optimizer)
+    set_silent(model)
+    @variable(model, 0 <= x <= 10)
+    @variable(model, 0 <= y <= 20)
+    @variable(model, 0 <= z <= 20)
+    @constraint(model, c0, 2z <= 1)
+    @constraint(model, c00, 3z <= 1)
+    @constraint(model, c1, x + y <= 1)
+    @constraint(model, c2, x + y >= 2)
+    @objective(model, Max, x + y)
+    optimize!(model)
+    solver = MathOptIIS.Optimizer()
+    MOI.set(solver, MathOptIIS.InfeasibleModel(), backend(model))
+    MOI.set(solver, MathOptIIS.InnerOptimizer(), HiGHS.Optimizer)
+    MOI.compute_conflict!(solver)
+    data = solver.results
+    @test length(data) == 1
+    @test data[1].metadata === nothing
+    @test _isequal_unordered(data[].constraints, [index(c2), index(c1)])
+    result = Dict(c1 => MOI.IN_CONFLICT, c2 => MOI.IN_CONFLICT)
+    for ci in all_constraints(model; include_variable_in_set_constraints = true)
+        @test MOI.get(solver, MOI.ConstraintConflictStatus(), index(ci)) ==
+              get(result, ci, MOI.NOT_IN_CONFLICT)
+    end
+    return
+end
+
 function test_iis_binary()
     model = Model(HiGHS.Optimizer)
     set_silent(model)
