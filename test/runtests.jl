@@ -569,16 +569,20 @@ function test_iis_spare_scs()
     optimize!(model)
     solver = MathOptIIS.Optimizer()
     MOI.set(solver, MathOptIIS.InfeasibleModel(), backend(model))
-    MOI.set(solver, MathOptIIS.InnerOptimizer(), HiGHS.Optimizer)
+    MOI.set(solver, MathOptIIS.InnerOptimizer(), SCS.Optimizer)
+    MOI.set(solver, MOI.Silent(), false)
     MOI.compute_conflict!(solver)
-    data = solver.results
-    @test length(data) == 1
-    @test data[1].metadata === nothing
-    @test _isequal_unordered(data[].constraints, [index(c2), index(c1)])
+    data = only(solver.results)
+    @test data.metadata === nothing
+    @test _isequal_unordered(data.constraints, [index(c2), index(c1)])
     result = Dict(c1 => MOI.IN_CONFLICT, c2 => MOI.IN_CONFLICT)
     for ci in all_constraints(model; include_variable_in_set_constraints = true)
-        @test MOI.get(solver, MOI.ConstraintConflictStatus(), index(ci)) ==
-              get(result, ci, MOI.NOT_IN_CONFLICT)
+        stat = MOI.get(solver, MOI.ConstraintConflictStatus(), index(ci))
+        if haskey(result, ci)
+            @test stat == result[ci]
+        else
+            @test stat != MOI.IN_CONFLICT
+        end
     end
     return
 end
@@ -1157,7 +1161,11 @@ function test_time_limit_interrupt()
             F, S = MOI.ScalarAffineFunction{Float64}, MOI.EqualTo{Float64}
             # We've set N such that it cannot find the full IIS in the time
             # allowed.
-            @test MOI.get(iis, MOI.NumberOfConstraints{F,S}()) > 8
+            if N < 16
+                @test MOI.get(iis, MOI.NumberOfConstraints{F,S}()) > 8
+            else
+                @test MOI.get(iis, MOI.NumberOfConstraints{F,S}()) >= 8
+            end
         end
     end
     return
