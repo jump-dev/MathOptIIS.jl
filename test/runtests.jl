@@ -569,7 +569,7 @@ function test_iis_spare_scs()
     optimize!(model)
     solver = MathOptIIS.Optimizer()
     MOI.set(solver, MathOptIIS.InfeasibleModel(), backend(model))
-    MOI.set(solver, MathOptIIS.InnerOptimizer(), HiGHS.Optimizer)
+    MOI.set(solver, MathOptIIS.InnerOptimizer(), SCS.Optimizer)
     MOI.compute_conflict!(solver)
     data = solver.results
     @test length(data) == 1
