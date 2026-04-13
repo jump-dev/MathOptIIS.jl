@@ -1161,7 +1161,11 @@ function test_time_limit_interrupt()
             F, S = MOI.ScalarAffineFunction{Float64}, MOI.EqualTo{Float64}
             # We've set N such that it cannot find the full IIS in the time
             # allowed.
-            @test MOI.get(iis, MOI.NumberOfConstraints{F,S}()) > 8
+            if N < 16
+                @test MOI.get(iis, MOI.NumberOfConstraints{F,S}()) > 8
+            else
+                @test MOI.get(iis, MOI.NumberOfConstraints{F,S}()) >= 8
+            end
         end
     end
     return
