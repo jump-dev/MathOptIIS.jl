@@ -1004,6 +1004,9 @@ function _dual_certificate!(
 )
     for (F, S) in MOI.get(model, MOI.ListOfConstraintTypesPresent())
         for ci in MOI.get(model, MOI.ListOfConstraintIndices{F,S}())
+            # This iszero check here is rather tight. We may want to consider
+            # relaxing it for solvers like SCS that have some tolerance for what
+            # is a certificate.
             if !iszero(MOI.get(model, MOI.ConstraintDual(), ci))
                 push!(dual_certificate, ci)
             end
