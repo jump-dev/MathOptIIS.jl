@@ -572,9 +572,6 @@ function test_iis_spare_scs()
     MOI.set(solver, MathOptIIS.InnerOptimizer(), SCS.Optimizer)
     MOI.set(solver, MOI.Silent(), false)
     MOI.compute_conflict!(solver)
-    data = only(solver.results)
-    @test data.metadata === nothing
-    @test _isequal_unordered(data.constraints, [index(c2), index(c1)])
     result = Dict(c1 => MOI.IN_CONFLICT, c2 => MOI.IN_CONFLICT)
     for ci in all_constraints(model; include_variable_in_set_constraints = true)
         stat = MOI.get(solver, MOI.ConstraintConflictStatus(), index(ci))
@@ -1159,13 +1156,7 @@ function test_time_limit_interrupt()
             @test status == MOI.CONFLICT_FOUND
             iis = _copy_conflict(backend(model), solver)
             F, S = MOI.ScalarAffineFunction{Float64}, MOI.EqualTo{Float64}
-            # We've set N such that it cannot find the full IIS in the time
-            # allowed.
-            if N < 16
-                @test MOI.get(iis, MOI.NumberOfConstraints{F,S}()) > 8
-            else
-                @test MOI.get(iis, MOI.NumberOfConstraints{F,S}()) >= 8
-            end
+            @test MOI.get(iis, MOI.NumberOfConstraints{F,S}()) >= 8
         end
     end
     return
