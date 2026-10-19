@@ -1238,6 +1238,54 @@ function test_empty()
     return
 end
 
+function test_issue_41a()
+    _test_compute_conflict(
+        """
+        variables: x, y
+        maxobjective: 1.0 * x + 1.0 * y
+        x >= 0.0
+        y >= 0.0
+        x in Integer()
+        y in Integer()
+        1.0 * x + -1.0 * y <= 1.0
+        """,
+        """
+        variables: x, y
+        x >= 0.0
+        y >= 0.0
+        x in Integer()
+        y in Integer()
+        1.0 * x + -1.0 * y <= 1.0
+        """;
+        optimizer = HiGHS.Optimizer,
+        silent = false,
+    )
+    return
+end
+
+function test_issue_41b()
+    _test_compute_conflict(
+        """
+        variables: x, y, z
+        maxobjective: 1.0 * x
+        y in Integer()
+        z in Integer()
+        1.0 * y + 1.0 * z == 1.0
+        1.0 * y + -1.0 * z == 0.0
+        """,
+        """
+        variables: x, y, z
+        y in Integer()
+        z in Integer()
+        1.0 * y + 1.0 * z == 1.0
+        1.0 * y + -1.0 * z == 0.0
+        """;
+        optimizer = HiGHS.Optimizer,
+        silent = false,
+    )
+    return
+end
+
 end # module
 
 TestMathOptIIS.runtests()

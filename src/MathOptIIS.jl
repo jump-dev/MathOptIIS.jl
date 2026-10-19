@@ -729,7 +729,8 @@ function _elastic_filter(
     #  * we're going to be modifying and re-solving anyway, so it doesn't hurt
     #    to cache some work. It's only one extra solve.
     _optimize!(optimizer, model)
-    if _is_feasible(model)
+    if _is_feasible(model) ||
+       MOI.get(model, MOI.TerminationStatus()) == MOI.DUAL_INFEASIBLE
         if optimizer.verbose
             println("[MathOptIIS]     integrality is required")
         end
@@ -826,6 +827,17 @@ function _elastic_filter(
                         break
                     end
                 end
+            end
+            if isempty(constraints_to_fix)
+                # We couldn't find something to fix. This could happen if the
+                # slack is violated by some small tolerance. Add the remaining
+                # constraints to the candidate and deal with them in the
+                # deletion filter.
+                for con in constraints_to_check
+                    _fix_slack(model, constraint_to_affine[con])
+                    push!(iis_candidate, con)
+                end
+                break
             end
             for con in constraints_to_fix
                 _fix_slack(model, constraint_to_affine[con])
